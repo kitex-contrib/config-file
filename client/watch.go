@@ -83,11 +83,6 @@ func (c *ConfigWatcher) parseHandler(filepath string) {
 		return
 	}
 
-	if resp == nil {
-		klog.Warnf("[local] the parsed data is nil, skip\n")
-		return
-	}
-
 	c.config = resp.GetConfig(c.key)
 	if c.config == nil {
 		klog.Warnf("[local] not matching key found, skip\n")
