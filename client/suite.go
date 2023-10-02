@@ -37,8 +37,8 @@ func NewSuite(from, to, filePath string) *FileConfigClientSuite {
 func (s *FileConfigClientSuite) Options() []client.Option {
 	watcher := NewConfigWatcher(s.filePath, s.from, s.to)
 
-	opts := make([]client.Option, 0, 5)
-	opts = append(opts, WithRetryPolicy(watcher))
+	opts := make([]client.Option, 0, 6)
+	opts = append(opts, WithRetryPolicy(watcher)...)
 	opts = append(opts, WithCircuitBreaker(watcher)...)
 	opts = append(opts, WithRPCTimeout(watcher))
 	opts = append(opts, client.WithCloseCallbacks(watcher.Stop))
