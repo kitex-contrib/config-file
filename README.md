@@ -4,7 +4,7 @@
 
 Read, load, and listen to local configuration files
 
-## How to use?
+## Usage
 
 ### Basic
 
@@ -111,7 +111,7 @@ func main() {
 |qps_limit| Maximum request number every 100ms |
 
 Example:
-```
+```json
 {
     "ServiceName": {
         "limit": {
@@ -137,7 +137,7 @@ Note:
 |failure_policy.backoff_policy| Can only be set one of `fixed` `none` `random` |
 
 Example：
-```
+```json
 {
     "ClientName/ServiceName": {
         "retry": {
@@ -179,7 +179,7 @@ Note: retry.Container has built-in support for specifying the default configurat
 [JSON Schema](https://github.com/cloudwego/kitex/blob/develop/pkg/rpctimeout/item_rpc_timeout.go#L42)
 
 Example：
-```
+```json
 {
     "ClientName/ServiceName": {
         "timeout": {
@@ -195,7 +195,6 @@ Example：
     }
 }
 ```
-Note: The circuit breaker implementation of kitex does not currently support changing the global default configuration (see [initServiceCB](https://github.com/cloudwego/kitex/blob/v0.5.1/pkg/circuitbreak/cbsuite.go#L195) for details).
 
 ##### Circuit Break: Category=circuit_break
 
@@ -205,9 +204,10 @@ Note: The circuit breaker implementation of kitex does not currently support cha
 |----|----|
 |min_sample| Minimum statistical sample number|
 
-Example：
-```
 The echo method uses the following configuration (0.3, 100) and other methods use the global default configuration (0.5, 200)
+
+Example：
+```json
 
 {
     "ClientName/ServiceName": {
@@ -221,10 +221,11 @@ The echo method uses the following configuration (0.3, 100) and other methods us
     }
 }
 ```
+
+Note: The circuit breaker implementation of kitex does not currently support changing the global default configuration (see [initServiceCB](https://github.com/cloudwego/kitex/blob/v0.5.1/pkg/circuitbreak/cbsuite.go#L195) for details).
 ### More Info
 
 Refer to [example](https://github.com/kitex-contrib/config-file/tree/main/example) for more usage.
-
 
 ## Note
 

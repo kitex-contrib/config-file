@@ -4,7 +4,7 @@
 
 读取、加载并监听本地配置文件
 
-## 这个项目应当如何使用?
+## 使用说明
 
 ### 基本使用
 
@@ -110,8 +110,8 @@ func main() {
 |connection_limit|最大并发数量|
 |qps_limit|每 100ms 内的最大请求数量|
 
-Example:
-```
+样例:
+```json
 {
     "ServiceName": {
         "limit": {
@@ -136,8 +136,8 @@ Example:
 |type| 0: failure_policy 1: backup_policy|
 |failure_policy.backoff_policy| 可以设置的策略： `fixed` `none` `random` |
 
-例子
-```
+样例：
+```json
 {
     "ClientName/ServiceName": {
         "retry": {
@@ -179,7 +179,7 @@ Example:
 [JSON Schema](https://github.com/cloudwego/kitex/blob/develop/pkg/rpctimeout/item_rpc_timeout.go#L42)
 
 样例：
-```
+```json
 {
     "ClientName/ServiceName": {
         "timeout": {
@@ -195,7 +195,6 @@ Example:
     }
 }
 ```
-注：kitex 的熔断实现目前不支持修改全局默认配置（详见 [initServiceCB](https://github.com/cloudwego/kitex/blob/v0.5.1/pkg/circuitbreak/cbsuite.go#L195)）
 
 ##### 熔断: Category=circuit_break
 
@@ -206,9 +205,8 @@ Example:
 |min_sample|最小的统计样本数|
 
 样例：
-```
 echo 方法使用下面的配置（0.3、100），其他方法使用全局默认配置（0.5、200）
-
+```json
 {
     "ClientName/ServiceName": {
         "circuitbreaker": {
@@ -221,6 +219,7 @@ echo 方法使用下面的配置（0.3、100），其他方法使用全局默认
     }
 }
 ```
+注：kitex 的熔断实现目前不支持修改全局默认配置（详见 [initServiceCB](https://github.com/cloudwego/kitex/blob/v0.5.1/pkg/circuitbreak/cbsuite.go#L195)）
 ### 更多信息
 
 更多示例请参考 [example](https://github.com/kitex-contrib/config-file/tree/main/example)
