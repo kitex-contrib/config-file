@@ -24,17 +24,31 @@ import (
 	"github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/pkg/klog"
 	fileclient "github.com/kitex-contrib/config-file/client"
+	"github.com/kitex-contrib/config-file/monitor"
+)
+
+const (
+	filepath    = "kitex_client.json"
+	key         = "ClientName/ServiceName"
+	serviceName = "ServiceName"
+	clientName  = "ClientName"
 )
 
 func main() {
 	klog.SetLevel(klog.LevelDebug)
 
-	serviceName := "ServiceName"
-	clientName := "ClientName"
+	watcher, err := monitor.NewConfigMonitor(monitor.Options{
+		Key:      key,
+		FilePath: filepath,
+	})
+	if err != nil {
+		panic(err)
+	}
+
 	client, err := echo.NewClient(
 		serviceName,
 		client.WithHostPorts("0.0.0.0:8888"),
-		client.WithSuite(fileclient.NewSuite(clientName, serviceName, "kitex_client.json")), // add watcher
+		client.WithSuite(fileclient.NewSuite(serviceName, watcher)), // add watcher
 	)
 	if err != nil {
 		log.Fatal(err)

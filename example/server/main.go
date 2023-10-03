@@ -23,10 +23,17 @@ import (
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/server"
+	"github.com/kitex-contrib/config-file/monitor"
 	fileserver "github.com/kitex-contrib/config-file/server"
 )
 
 var _ api.Echo = &EchoImpl{}
+
+const (
+	filepath    = "kitex_server.json"
+	key         = "ServiceName"
+	serviceName = "ServiceName"
+)
 
 // EchoImpl implements the last service interface defined in the IDL.
 type EchoImpl struct{}
@@ -40,11 +47,18 @@ func (s *EchoImpl) Echo(ctx context.Context, req *api.Request) (resp *api.Respon
 func main() {
 	klog.SetLevel(klog.LevelDebug)
 
-	serviceName := "ServiceName"
+	watcher, err := monitor.NewConfigMonitor(monitor.Options{
+		Key:      key,
+		FilePath: filepath,
+	})
+	if err != nil {
+		panic(err)
+	}
+
 	svr := echo.NewServer(
 		new(EchoImpl),
 		server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: serviceName}),
-		server.WithSuite(fileserver.NewSuite(serviceName, "kitex_server.json")), // add watcher
+		server.WithSuite(fileserver.NewSuite(watcher)), // add watcher
 	)
 	if err := svr.Run(); err != nil {
 		log.Println("server stopped with error:", err)

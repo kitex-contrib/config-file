@@ -18,11 +18,13 @@ import (
 	"github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/pkg/retry"
+	"github.com/kitex-contrib/config-file/monitor"
+	"github.com/kitex-contrib/config-file/parser"
 	"github.com/kitex-contrib/config-file/utils"
 )
 
 // WithRetryPolicy returns a server.Option that sets the retry policies for the client
-func WithRetryPolicy(watcher *ConfigWatcher) []client.Option {
+func WithRetryPolicy(watcher *monitor.ConfigMonitor) []client.Option {
 	rc := initRetryContainer(watcher)
 	return []client.Option{
 		client.WithRetryContainer(rc),
@@ -31,14 +33,14 @@ func WithRetryPolicy(watcher *ConfigWatcher) []client.Option {
 }
 
 // initRetryOptions init the retry container
-func initRetryContainer(watcher *ConfigWatcher) *retry.Container {
+func initRetryContainer(watcher *monitor.ConfigMonitor) *retry.Container {
 	retryContainer := retry.NewRetryContainerWithPercentageLimit()
 
 	ts := utils.ThreadSafeSet{}
 
 	onChangeCallback := func() {
 		// the key is method name, wildcard "*" can match anything.
-		rcs := watcher.Config().Retry
+		rcs := watcher.Config().(*parser.ClientFileConfig).Retry
 		set := utils.Set{}
 
 		for method, policy := range rcs {

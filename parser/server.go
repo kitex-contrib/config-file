@@ -22,7 +22,7 @@ type ServerFileConfig struct {
 
 type ServerFileManager map[string]*ServerFileConfig
 
-func (s *ServerFileManager) GetConfig(key string) *ServerFileConfig {
+func (s *ServerFileManager) GetConfig(key string) interface{} {
 	config, exist := (*s)[key]
 
 	if !exist {

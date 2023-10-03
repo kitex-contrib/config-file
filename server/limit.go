@@ -20,15 +20,17 @@ import (
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/pkg/limit"
 	"github.com/cloudwego/kitex/server"
+	"github.com/kitex-contrib/config-file/monitor"
+	"github.com/kitex-contrib/config-file/parser"
 )
 
 // WithLimiter returns a server.Option that sets the limiter for the server.
-func WithLimiter(watcher *ConfigWatcher) server.Option {
+func WithLimiter(watcher *monitor.ConfigMonitor) server.Option {
 	return server.WithLimit(initLimitOptions(watcher))
 }
 
 // initLimitOptions init the limiter options
-func initLimitOptions(watcher *ConfigWatcher) *limit.Option {
+func initLimitOptions(watcher *monitor.ConfigMonitor) *limit.Option {
 	var updater atomic.Value
 	opt := &limit.Option{}
 
@@ -39,7 +41,8 @@ func initLimitOptions(watcher *ConfigWatcher) *limit.Option {
 	}
 
 	onChangeCallback := func() {
-		lc := watcher.Config().Limit
+		lc := watcher.Config().(*parser.ServerFileConfig).Limit
+
 		klog.Infof("current maxConnections: %v, new: %v\n", opt.MaxConnections, lc.ConnectionLimit)
 
 		opt.MaxConnections = int(lc.ConnectionLimit)

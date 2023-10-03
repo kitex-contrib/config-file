@@ -28,7 +28,7 @@ type ClientFileConfig struct {
 
 type ClientFileManager map[string]*ClientFileConfig
 
-func (s *ClientFileManager) GetConfig(key string) *ClientFileConfig {
+func (s *ClientFileManager) GetConfig(key string) interface{} {
 	config, exist := (*s)[key]
 
 	if !exist {

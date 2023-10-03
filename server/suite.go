@@ -16,30 +16,33 @@ package server
 
 import (
 	"github.com/cloudwego/kitex/server"
+	"github.com/kitex-contrib/config-file/monitor"
+	"github.com/kitex-contrib/config-file/parser"
 )
 
 type FileConfigServerSuite struct {
-	service  string // service name
-	filePath string // config filepath
+	watcher *monitor.ConfigMonitor
 }
 
 // NewSuite service is the destination service.
-func NewSuite(service, filePath string) *FileConfigServerSuite {
+func NewSuite(watcher *monitor.ConfigMonitor) *FileConfigServerSuite {
 	return &FileConfigServerSuite{
-		service:  service,
-		filePath: filePath,
+		watcher: watcher,
 	}
 }
 
 // Options return a list client.Option
 func (s *FileConfigServerSuite) Options() []server.Option {
-	watcher := NewConfigWatcher(s.filePath, s.service)
+	s.watcher.SetManager(&parser.ServerFileManager{})
 
 	opts := make([]server.Option, 0, 1)
-	opts = append(opts, WithLimiter(watcher))
+	opts = append(opts, WithLimiter(s.watcher))
 
-	watcher.Start()
-	server.RegisterShutdownHook(watcher.Stop)
+	if err := s.watcher.Start(); err != nil {
+		panic(err)
+	}
+
+	server.RegisterShutdownHook(s.watcher.Stop)
 
 	return opts
 }

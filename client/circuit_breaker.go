@@ -21,12 +21,14 @@ import (
 	"github.com/cloudwego/kitex/pkg/circuitbreak"
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
+	"github.com/kitex-contrib/config-file/monitor"
+	"github.com/kitex-contrib/config-file/parser"
 	"github.com/kitex-contrib/config-file/utils"
 )
 
 // WithCircuitBreaker returns a server.Option that sets the circuit breaker for the client
-func WithCircuitBreaker(watcher *ConfigWatcher) []client.Option {
-	cbSuite := initCircuitBreaker(watcher)
+func WithCircuitBreaker(service string, watcher *monitor.ConfigMonitor) []client.Option {
+	cbSuite := initCircuitBreaker(service, watcher)
 	return []client.Option{
 		client.WithCircuitBreaker(cbSuite),
 		client.WithCloseCallbacks(func() error {
@@ -36,23 +38,23 @@ func WithCircuitBreaker(watcher *ConfigWatcher) []client.Option {
 }
 
 // initCircuitBreaker init the circuitbreaker suite
-func initCircuitBreaker(watcher *ConfigWatcher) *circuitbreak.CBSuite {
+func initCircuitBreaker(service string, watcher *monitor.ConfigMonitor) *circuitbreak.CBSuite {
 	cb := circuitbreak.NewCBSuite(genServiceCBKeyWithRPCInfo)
 	lcb := utils.ThreadSafeSet{}
 
 	onChangeCallback := func() {
 		set := utils.Set{}
-		configs := watcher.Config().Circuitbreaker
+		configs := watcher.Config().(*parser.ClientFileConfig).Circuitbreaker
 
 		for method, config := range configs {
 			set[method] = true
-			key := genServiceCBKey(watcher.ToService(), method)
+			key := genServiceCBKey(service, method)
 			cb.UpdateServiceCBConfig(key, *config)
 		}
 
 		for _, method := range lcb.DiffAndEmplace(set) {
 			klog.Infof("remove method CB config: %v\n", method)
-			key := genServiceCBKey(watcher.ToService(), method)
+			key := genServiceCBKey(service, method)
 			cb.UpdateServiceCBConfig(key, circuitbreak.GetDefaultCBConfig())
 		}
 	}

@@ -16,34 +16,39 @@ package client
 
 import (
 	"github.com/cloudwego/kitex/client"
+	"github.com/kitex-contrib/config-file/monitor"
+	"github.com/kitex-contrib/config-file/parser"
 )
 
 type FileConfigClientSuite struct {
-	from     string // client service name
-	to       string // server service name
-	filePath string // config filepath
+	watcher *monitor.ConfigMonitor
+	service string
 }
 
 // NewSuite service is the destination service.
-func NewSuite(from, to, filePath string) *FileConfigClientSuite {
+func NewSuite(service string, watcher *monitor.ConfigMonitor) *FileConfigClientSuite {
 	return &FileConfigClientSuite{
-		from:     from,
-		to:       to,
-		filePath: filePath,
+		watcher: watcher,
+		service: service,
 	}
 }
 
 // Options return a list client.Option
 func (s *FileConfigClientSuite) Options() []client.Option {
-	watcher := NewConfigWatcher(s.filePath, s.from, s.to)
+	s.watcher.SetManager(&parser.ClientFileManager{})
 
 	opts := make([]client.Option, 0, 6)
-	opts = append(opts, WithRetryPolicy(watcher)...)
-	opts = append(opts, WithCircuitBreaker(watcher)...)
-	opts = append(opts, WithRPCTimeout(watcher))
-	opts = append(opts, client.WithCloseCallbacks(watcher.Stop))
+	opts = append(opts, WithRetryPolicy(s.watcher)...)
+	opts = append(opts, WithCircuitBreaker(s.service, s.watcher)...)
+	opts = append(opts, WithRPCTimeout(s.watcher))
+	opts = append(opts, client.WithCloseCallbacks(func() error {
+		s.watcher.Stop()
+		return nil
+	}))
 
-	watcher.Start()
+	if err := s.watcher.Start(); err != nil {
+		panic(err)
+	}
 
 	return opts
 }
