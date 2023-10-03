@@ -16,7 +16,6 @@ package client
 
 import (
 	"github.com/cloudwego/kitex/client"
-	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/pkg/rpctimeout"
 	"github.com/kitex-contrib/config-file/monitor"
@@ -35,8 +34,6 @@ func initRPCTimeout(watcher *monitor.ConfigMonitor) rpcinfo.TimeoutProvider {
 	onChangeCallback := func() {
 		// the key is method name, wildcard "*" can match anything.
 		configs := watcher.Config().(*parser.ClientFileConfig).Timeout
-
-		klog.Infof("configs: %+v\n", configs["*"])
 		rpcTimeoutContainer.NotifyPolicyChange(configs)
 	}
 
