@@ -16,6 +16,7 @@ package monitor
 
 import (
 	"errors"
+	"os"
 
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/kitex-contrib/config-file/parser"
@@ -34,7 +35,6 @@ type ConfigMonitor struct {
 	fileWatcher *utils.FileWatcher   // local config file watcher
 	callbacks   []func()             // callbacks when config file changed
 	key         string               // key
-	provider    KeyProvider          // provider
 }
 
 // NewConfigMonitor init a monitor for the config file
@@ -57,7 +57,6 @@ func NewConfigMonitor(opts Options) (*ConfigMonitor, error) {
 	return &ConfigMonitor{
 		fileWatcher: fw,
 		key:         opts.Key,
-		provider:    opts.Provider,
 	}, nil
 }
 
@@ -93,7 +92,7 @@ func (c *ConfigMonitor) AddCallback(callback func()) {
 
 // parseHandler parse and invoke each function in the callbacks array
 func (c *ConfigMonitor) parseHandler(filepath string) {
-	data, err := utils.ReadFileAll(filepath)
+	data, err := os.ReadFile(filepath)
 	if err != nil {
 		klog.Errorf("[local] read config file failed: %v\n", err)
 		return

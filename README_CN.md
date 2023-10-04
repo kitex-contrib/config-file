@@ -22,10 +22,17 @@ import (
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/server"
+	"github.com/kitex-contrib/config-file/monitor"
 	fileserver "github.com/kitex-contrib/config-file/server"
 )
 
 var _ api.Echo = &EchoImpl{}
+
+const (
+	filepath    = "kitex_server.json"
+	key         = "ServiceName"
+	serviceName = "ServiceName"
+)
 
 // EchoImpl implements the last service interface defined in the IDL.
 type EchoImpl struct{}
@@ -39,11 +46,18 @@ func (s *EchoImpl) Echo(ctx context.Context, req *api.Request) (resp *api.Respon
 func main() {
 	klog.SetLevel(klog.LevelDebug)
 
-	serviceName := "ServiceName"
+	watcher, err := monitor.NewConfigMonitor(monitor.Options{
+		Key:      key,
+		FilePath: filepath,
+	})
+	if err != nil {
+		panic(err)
+	}
+
 	svr := echo.NewServer(
 		new(EchoImpl),
 		server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: serviceName}),
-		server.WithSuite(fileserver.NewSuite(serviceName, "kitex_server.json")), // add watcher
+		server.WithSuite(fileserver.NewSuite(watcher)), // add watcher
 	)
 	if err := svr.Run(); err != nil {
 		log.Println("server stopped with error:", err)
@@ -51,7 +65,6 @@ func main() {
 		log.Println("server stopped")
 	}
 }
-
 ```
 
 #### 客户端
@@ -69,17 +82,31 @@ import (
 	"github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/pkg/klog"
 	fileclient "github.com/kitex-contrib/config-file/client"
+	"github.com/kitex-contrib/config-file/monitor"
+)
+
+const (
+	filepath    = "kitex_client.json"
+	key         = "ClientName/ServiceName"
+	serviceName = "ServiceName"
+	clientName  = "ClientName"
 )
 
 func main() {
 	klog.SetLevel(klog.LevelDebug)
 
-	serviceName := "ServiceName"
-	clientName := "ClientName"
+	watcher, err := monitor.NewConfigMonitor(monitor.Options{
+		Key:      key,
+		FilePath: filepath,
+	})
+	if err != nil {
+		panic(err)
+	}
+
 	client, err := echo.NewClient(
 		serviceName,
 		client.WithHostPorts("0.0.0.0:8888"),
-		client.WithSuite(fileclient.NewSuite(clientName, serviceName, "kitex_client.json")), // add watcher
+		client.WithSuite(fileclient.NewSuite(serviceName, watcher)),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -225,7 +252,9 @@ echo 方法使用下面的配置（0.3、100），其他方法使用全局默认
 更多示例请参考 [example](https://github.com/kitex-contrib/config-file/tree/main/example)
 
 
-## 注意
+## 注意事项
+
+### 自定义键
 
 对于客户端配置，您应该将它们的所有配置写入同一对`$UserServiceName/$ServerServiceName`中，例如
 

@@ -48,7 +48,7 @@ func main() {
 	client, err := echo.NewClient(
 		serviceName,
 		client.WithHostPorts("0.0.0.0:8888"),
-		client.WithSuite(fileclient.NewSuite(serviceName, watcher)), // add watcher
+		client.WithSuite(fileclient.NewSuite(serviceName, watcher)),
 	)
 	if err != nil {
 		log.Fatal(err)

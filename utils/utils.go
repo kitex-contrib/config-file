@@ -16,26 +16,9 @@ package utils
 
 import (
 	"errors"
-	"io"
 	"io/fs"
 	"os"
 )
-
-func ReadFileAll(filepath string) ([]byte, error) {
-	file, err := os.Open(filepath)
-	if err != nil {
-		return nil, err
-	}
-
-	defer file.Close()
-
-	data, err := io.ReadAll(file)
-	if err != nil {
-		return nil, err
-	}
-
-	return data, nil
-}
 
 // PathExists check whether the file or directory exists
 func PathExists(path string) (bool, error) {
