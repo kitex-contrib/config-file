@@ -19,7 +19,6 @@ import (
 
 	kitexclient "github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/pkg/circuitbreak"
-	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/kitex-contrib/config-file/monitor"
 	"github.com/kitex-contrib/config-file/parser"
@@ -53,7 +52,6 @@ func initCircuitBreaker(service string, watcher *monitor.ConfigMonitor) *circuit
 		}
 
 		for _, method := range lcb.DiffAndEmplace(set) {
-			klog.Infof("remove method CB config: %v\n", method)
 			key := genServiceCBKey(service, method)
 			cb.UpdateServiceCBConfig(key, circuitbreak.GetDefaultCBConfig())
 		}

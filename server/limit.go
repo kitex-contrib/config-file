@@ -43,8 +43,6 @@ func initLimitOptions(watcher *monitor.ConfigMonitor) *limit.Option {
 	onChangeCallback := func() {
 		lc := watcher.Config().(*parser.ServerFileConfig).Limit
 
-		klog.Infof("current maxConnections: %v, new: %v\n", opt.MaxConnections, lc.ConnectionLimit)
-
 		opt.MaxConnections = int(lc.ConnectionLimit)
 		opt.MaxQPS = int(lc.QPSLimit)
 
