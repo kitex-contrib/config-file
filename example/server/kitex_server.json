@@ -1,8 +1,0 @@
-{
-    "ServiceName": {
-        "limit": {
-            "connection_limit": 300,
-            "qps_limit": 200
-        }
-    }
-}
