@@ -17,7 +17,7 @@ package client
 import (
 	"strings"
 
-	"github.com/cloudwego/kitex/client"
+	kitexclient "github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/pkg/circuitbreak"
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
@@ -27,11 +27,11 @@ import (
 )
 
 // WithCircuitBreaker returns a server.Option that sets the circuit breaker for the client
-func WithCircuitBreaker(service string, watcher *monitor.ConfigMonitor) []client.Option {
+func WithCircuitBreaker(service string, watcher *monitor.ConfigMonitor) []kitexclient.Option {
 	cbSuite := initCircuitBreaker(service, watcher)
-	return []client.Option{
-		client.WithCircuitBreaker(cbSuite),
-		client.WithCloseCallbacks(func() error {
+	return []kitexclient.Option{
+		kitexclient.WithCircuitBreaker(cbSuite),
+		kitexclient.WithCloseCallbacks(func() error {
 			return cbSuite.Close()
 		}),
 	}

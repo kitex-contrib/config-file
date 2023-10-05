@@ -15,7 +15,7 @@
 package server
 
 import (
-	"github.com/cloudwego/kitex/server"
+	kitexserver "github.com/cloudwego/kitex/server"
 	"github.com/kitex-contrib/config-file/monitor"
 	"github.com/kitex-contrib/config-file/parser"
 )
@@ -32,17 +32,17 @@ func NewSuite(watcher *monitor.ConfigMonitor) *FileConfigServerSuite {
 }
 
 // Options return a list client.Option
-func (s *FileConfigServerSuite) Options() []server.Option {
+func (s *FileConfigServerSuite) Options() []kitexserver.Option {
 	s.watcher.SetManager(&parser.ServerFileManager{})
 
-	opts := make([]server.Option, 0, 1)
+	opts := make([]kitexserver.Option, 0, 1)
 	opts = append(opts, WithLimiter(s.watcher))
 
 	if err := s.watcher.Start(); err != nil {
 		panic(err)
 	}
 
-	server.RegisterShutdownHook(s.watcher.Stop)
+	kitexserver.RegisterShutdownHook(s.watcher.Stop)
 
 	return opts
 }

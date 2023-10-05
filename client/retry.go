@@ -15,7 +15,7 @@
 package client
 
 import (
-	"github.com/cloudwego/kitex/client"
+	kitexclient "github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/pkg/retry"
 	"github.com/kitex-contrib/config-file/monitor"
@@ -24,11 +24,11 @@ import (
 )
 
 // WithRetryPolicy returns a server.Option that sets the retry policies for the client
-func WithRetryPolicy(watcher *monitor.ConfigMonitor) []client.Option {
+func WithRetryPolicy(watcher *monitor.ConfigMonitor) []kitexclient.Option {
 	rc := initRetryContainer(watcher)
-	return []client.Option{
-		client.WithRetryContainer(rc),
-		client.WithCloseCallbacks(rc.Close),
+	return []kitexclient.Option{
+		kitexclient.WithRetryContainer(rc),
+		kitexclient.WithCloseCallbacks(rc.Close),
 	}
 }
 

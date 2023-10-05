@@ -15,7 +15,7 @@
 package client
 
 import (
-	"github.com/cloudwego/kitex/client"
+	kitexclient "github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/cloudwego/kitex/pkg/rpctimeout"
 	"github.com/kitex-contrib/config-file/monitor"
@@ -23,8 +23,8 @@ import (
 )
 
 // WithRPCTimeout returns a server.Option that sets the timeout provider for the client.
-func WithRPCTimeout(watcher *monitor.ConfigMonitor) client.Option {
-	return client.WithTimeoutProvider(initRPCTimeout(watcher))
+func WithRPCTimeout(watcher *monitor.ConfigMonitor) kitexclient.Option {
+	return kitexclient.WithTimeoutProvider(initRPCTimeout(watcher))
 }
 
 // initRPCTimeout init the rpc timeout provider

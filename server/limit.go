@@ -19,14 +19,14 @@ import (
 
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/pkg/limit"
-	"github.com/cloudwego/kitex/server"
+	kitexserver "github.com/cloudwego/kitex/server"
 	"github.com/kitex-contrib/config-file/monitor"
 	"github.com/kitex-contrib/config-file/parser"
 )
 
 // WithLimiter returns a server.Option that sets the limiter for the server.
-func WithLimiter(watcher *monitor.ConfigMonitor) server.Option {
-	return server.WithLimit(initLimitOptions(watcher))
+func WithLimiter(watcher *monitor.ConfigMonitor) kitexserver.Option {
+	return kitexserver.WithLimit(initLimitOptions(watcher))
 }
 
 // initLimitOptions init the limiter options
