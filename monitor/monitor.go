@@ -24,9 +24,8 @@ import (
 )
 
 type Options struct {
-	FilePath string      // config file path
-	Key      string      // config key
-	Provider KeyProvider // custom key provider
+	FilePath string // config file path
+	Key      string // config key
 }
 
 type ConfigMonitor struct {
@@ -44,9 +43,6 @@ func NewConfigMonitor(opts Options) (*ConfigMonitor, error) {
 	}
 	if opts.Key == "" {
 		return nil, errors.New("empty config key")
-	}
-	if opts.Provider == nil {
-		opts.Provider = NewDefaultKeyProvider()
 	}
 
 	fw, err := utils.NewFileWatcher(opts.FilePath)
@@ -107,7 +103,7 @@ func (c *ConfigMonitor) parseHandler(filepath string) {
 
 	c.config = resp.GetConfig(c.key)
 	if c.config == nil {
-		klog.Warnf("[local] not matching key found, skip\n")
+		klog.Warnf("[local] not matching key found, skip. current key: %v\n", c.key)
 		return
 	}
 
