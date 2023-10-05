@@ -20,14 +20,17 @@ import (
 	"github.com/cloudwego/kitex/pkg/rpctimeout"
 )
 
+// ClientFileConfig is config of a client/service pair
 type ClientFileConfig struct {
-	Timeout        map[string]*rpctimeout.RPCTimeout `mapstructure:"timeout"`
-	Retry          map[string]*retry.Policy          `mapstructure:"retry"`
-	Circuitbreaker map[string]*circuitbreak.CBConfig `mapstructure:"circuitbreaker"`
+	Timeout        map[string]*rpctimeout.RPCTimeout `mapstructure:"timeout"`        // key: method, "*" for default
+	Retry          map[string]*retry.Policy          `mapstructure:"retry"`          // key: method, "*" for default
+	Circuitbreaker map[string]*circuitbreak.CBConfig `mapstructure:"circuitbreaker"` // key: method
 }
 
+// ClientFileManager is a map of client/service pairs to ClientFileConfig
 type ClientFileManager map[string]*ClientFileConfig
 
+// GetConfig returns the config from Manager by key
 func (s *ClientFileManager) GetConfig(key string) interface{} {
 	config, exist := (*s)[key]
 

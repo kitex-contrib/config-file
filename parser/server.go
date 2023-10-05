@@ -16,12 +16,15 @@ package parser
 
 import "github.com/cloudwego/kitex/pkg/limiter"
 
+// ServerFileConfig is config of a service
 type ServerFileConfig struct {
 	Limit limiter.LimiterConfig `mapstructure:"limit"`
 }
 
+// ServerFileManager is a map of service names to ServerFileConfig
 type ServerFileManager map[string]*ServerFileConfig
 
+// GetConfig returns the config from Manager by key
 func (s *ServerFileManager) GetConfig(key string) interface{} {
 	config, exist := (*s)[key]
 
