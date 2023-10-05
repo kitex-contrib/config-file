@@ -67,7 +67,14 @@ func (fw *FileWatcher) StartWatching() error {
 		return err
 	}
 
-	go fw.start()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				klog.Errorf("file watcher panic: %v\n", r)
+			}
+		}()
+		fw.start()
+	}()
 
 	return nil
 }
