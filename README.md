@@ -21,8 +21,8 @@ import (
 	"github.com/cloudwego/kitex-examples/kitex_gen/api/echo"
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
-	"github.com/cloudwego/kitex/server"
-	"github.com/kitex-contrib/config-file/monitor"
+	kitexserver "github.com/cloudwego/kitex/server"
+	"github.com/kitex-contrib/config-file/filewatcher"
 	fileserver "github.com/kitex-contrib/config-file/server"
 )
 
@@ -59,8 +59,8 @@ func main() {
 
 	svr := echo.NewServer(
 		new(EchoImpl),
-		server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: serviceName}),
-		server.WithSuite(fileserver.NewSuite(key, fw)), // add watcher
+		kitexserver.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: serviceName}),
+		kitexserver.WithSuite(fileserver.NewSuite(key, fw)), // add watcher
 	)
 	if err := svr.Run(); err != nil {
 		log.Println("server stopped with error:", err)
@@ -78,14 +78,16 @@ package main
 import (
 	"context"
 	"log"
+	"os"
+	"os/signal"
 	"time"
 
 	"github.com/cloudwego/kitex-examples/kitex_gen/api"
 	"github.com/cloudwego/kitex-examples/kitex_gen/api/echo"
-	"github.com/cloudwego/kitex/client"
+	kitexclient "github.com/cloudwego/kitex/client"
 	"github.com/cloudwego/kitex/pkg/klog"
 	fileclient "github.com/kitex-contrib/config-file/client"
-	"github.com/kitex-contrib/config-file/monitor"
+	"github.com/kitex-contrib/config-file/filewatcher"
 )
 
 const (
