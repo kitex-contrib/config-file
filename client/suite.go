@@ -16,6 +16,7 @@ package client
 
 import (
 	kitexclient "github.com/cloudwego/kitex/client"
+	"github.com/kitex-contrib/config-file/filewatcher"
 	"github.com/kitex-contrib/config-file/monitor"
 	"github.com/kitex-contrib/config-file/parser"
 )
@@ -26,9 +27,14 @@ type FileConfigClientSuite struct {
 }
 
 // NewSuite service is the destination service.
-func NewSuite(service string, watcher *monitor.ConfigMonitor) *FileConfigClientSuite {
+func NewSuite(service, key string, watcher *filewatcher.FileWatcher) *FileConfigClientSuite {
+	cm, err := monitor.NewConfigMonitor(key, watcher)
+	if err != nil {
+		panic(err)
+	}
+
 	return &FileConfigClientSuite{
-		watcher: watcher,
+		watcher: cm,
 		service: service,
 	}
 }
@@ -37,10 +43,10 @@ func NewSuite(service string, watcher *monitor.ConfigMonitor) *FileConfigClientS
 func (s *FileConfigClientSuite) Options() []kitexclient.Option {
 	s.watcher.SetManager(&parser.ClientFileManager{})
 
-	opts := make([]kitexclient.Option, 0, 6)
+	opts := make([]kitexclient.Option, 0, 7)
 	opts = append(opts, WithRetryPolicy(s.watcher)...)
 	opts = append(opts, WithCircuitBreaker(s.service, s.watcher)...)
-	opts = append(opts, WithRPCTimeout(s.watcher))
+	opts = append(opts, WithRPCTimeout(s.watcher)...)
 	opts = append(opts, kitexclient.WithCloseCallbacks(func() error {
 		s.watcher.Stop()
 		return nil

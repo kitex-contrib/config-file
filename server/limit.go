@@ -24,6 +24,10 @@ import (
 	"github.com/kitex-contrib/config-file/parser"
 )
 
+const (
+	keyLimiter = "service-limit"
+)
+
 // WithLimiter returns a server.Option that sets the limiter for the server.
 func WithLimiter(watcher *monitor.ConfigMonitor) kitexserver.Option {
 	return kitexserver.WithLimit(initLimitOptions(watcher))
@@ -46,6 +50,8 @@ func initLimitOptions(watcher *monitor.ConfigMonitor) *limit.Option {
 		opt.MaxConnections = int(lc.ConnectionLimit)
 		opt.MaxQPS = int(lc.QPSLimit)
 
+		klog.Debugf("[local] %s server limiter config: %+v\n", watcher.Key(), *opt)
+
 		u := updater.Load()
 		if u == nil {
 			klog.Warnf("[local] %s server limiter config: failed as the updater is empty", watcher.Key())
@@ -56,7 +62,7 @@ func initLimitOptions(watcher *monitor.ConfigMonitor) *limit.Option {
 		}
 	}
 
-	watcher.AddCallback(onChangeCallback)
+	watcher.RegisterCallback(onChangeCallback, keyLimiter)
 
 	return opt
 }

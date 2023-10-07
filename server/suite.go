@@ -16,6 +16,7 @@ package server
 
 import (
 	kitexserver "github.com/cloudwego/kitex/server"
+	"github.com/kitex-contrib/config-file/filewatcher"
 	"github.com/kitex-contrib/config-file/monitor"
 	"github.com/kitex-contrib/config-file/parser"
 )
@@ -25,9 +26,14 @@ type FileConfigServerSuite struct {
 }
 
 // NewSuite service is the destination service.
-func NewSuite(watcher *monitor.ConfigMonitor) *FileConfigServerSuite {
+func NewSuite(key string, watcher *filewatcher.FileWatcher) *FileConfigServerSuite {
+	cm, err := monitor.NewConfigMonitor(key, watcher)
+	if err != nil {
+		panic(err)
+	}
+
 	return &FileConfigServerSuite{
-		watcher: watcher,
+		watcher: cm,
 	}
 }
 

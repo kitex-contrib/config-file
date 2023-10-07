@@ -17,42 +17,39 @@ package monitor
 import (
 	"errors"
 	"os"
+	"sync"
 
 	"github.com/cloudwego/kitex/pkg/klog"
+	"github.com/kitex-contrib/config-file/filewatcher"
 	"github.com/kitex-contrib/config-file/parser"
-	"github.com/kitex-contrib/config-file/utils"
 )
 
-type Options struct {
-	FilePath string // config file path
-	Key      string // config key
-}
-
 type ConfigMonitor struct {
-	manager     parser.ConfigManager // Manager for the config file
-	config      interface{}          // config details
-	fileWatcher *utils.FileWatcher   // local config file watcher
-	callbacks   []func()             // callbacks when config file changed
-	key         string               // key
+	manager     parser.ConfigManager     // Manager for the config file
+	config      interface{}              // config details
+	fileWatcher *filewatcher.FileWatcher // local config file watcher
+	callbacks   map[string]func()        // callbacks when config file changed
+	key         string                   // key
+	mu          sync.Mutex               // mutex
 }
 
 // NewConfigMonitor init a monitor for the config file
-func NewConfigMonitor(opts Options) (*ConfigMonitor, error) {
-	if opts.FilePath == "" {
-		return nil, errors.New("empty config file path")
-	}
-	if opts.Key == "" {
+func NewConfigMonitor(key string, watcher *filewatcher.FileWatcher) (*ConfigMonitor, error) {
+	var err error
+	if key == "" {
 		return nil, errors.New("empty config key")
 	}
+	if watcher == nil {
+		return nil, errors.New("filewatcher is nil")
+	}
 
-	fw, err := utils.NewFileWatcher(opts.FilePath)
 	if err != nil {
 		return nil, err
 	}
 
 	return &ConfigMonitor{
-		fileWatcher: fw,
-		key:         opts.Key,
+		fileWatcher: watcher,
+		key:         key,
 	}, nil
 }
 
@@ -67,35 +64,55 @@ func (c *ConfigMonitor) Start() error {
 	if c.manager == nil {
 		return errors.New("not set manager for config file")
 	}
-	c.parseHandler(c.fileWatcher.FilePath())
-	c.fileWatcher.AddCallback(c.parseHandler)
-	return c.fileWatcher.StartWatching()
+
+	data, err := os.ReadFile(c.fileWatcher.FilePath())
+	if err != nil {
+		klog.Errorf("[local] read config file failed: %v\n", err)
+		return err
+	}
+	c.parseHandler(data)
+	return c.fileWatcher.RegisterCallback(c.parseHandler, c.key) // use key as callback key
 }
 
 // Stop stops the file watch progress
 func (c *ConfigMonitor) Stop() {
-	c.fileWatcher.StopWatching()
-	klog.Infof("[local] stop watching file: %s", c.fileWatcher.FilePath())
+	for k := range c.callbacks {
+		c.DeregisterCallback(k)
+	}
+
+	// deregister current object's parseHandler from filewatcher
+	c.fileWatcher.DeregisterCallback(c.key)
 }
 
 // SetManager set the manager for the config file
 func (c *ConfigMonitor) SetManager(manager parser.ConfigManager) { c.manager = manager }
 
-// AddCallback add callback function, it will be called when file changed
-func (c *ConfigMonitor) AddCallback(callback func()) {
-	c.callbacks = append(c.callbacks, callback)
+// RegisterCallback add callback function, it will be called when file changed
+func (c *ConfigMonitor) RegisterCallback(callback func(), key string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.callbacks == nil {
+		c.callbacks = make(map[string]func())
+	}
+	c.callbacks[key] = callback
+}
+
+// DeregisterCallback remove callback function.
+func (c *ConfigMonitor) DeregisterCallback(key string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if _, exists := c.callbacks[key]; !exists {
+		klog.Warnf("[local] ConfigMonitor callback %s not registered", key)
+		return
+	}
+	delete(c.callbacks, key)
 }
 
 // parseHandler parse and invoke each function in the callbacks array
-func (c *ConfigMonitor) parseHandler(filepath string) {
-	data, err := os.ReadFile(filepath)
-	if err != nil {
-		klog.Errorf("[local] read config file failed: %v\n", err)
-		return
-	}
-
+func (c *ConfigMonitor) parseHandler(data []byte) {
 	resp := c.manager
-	err = parser.Decode(data, resp)
+	err := parser.Decode(data, resp)
 	if err != nil {
 		klog.Errorf("[local] failed to parse the config file: %v\n", err)
 		return
@@ -112,5 +129,5 @@ func (c *ConfigMonitor) parseHandler(filepath string) {
 			callback()
 		}
 	}
-	klog.Infof("[local] server config parse and update complete \n")
+	klog.Infof("[local] config parse and update complete \n")
 }

@@ -25,12 +25,17 @@ import (
 	"github.com/kitex-contrib/config-file/utils"
 )
 
+const (
+	keyCircuitBreaker = "client-circuitbreaker"
+)
+
 // WithCircuitBreaker returns a server.Option that sets the circuit breaker for the client
 func WithCircuitBreaker(service string, watcher *monitor.ConfigMonitor) []kitexclient.Option {
 	cbSuite := initCircuitBreaker(service, watcher)
 	return []kitexclient.Option{
 		kitexclient.WithCircuitBreaker(cbSuite),
 		kitexclient.WithCloseCallbacks(func() error {
+			watcher.DeregisterCallback(keyCircuitBreaker)
 			return cbSuite.Close()
 		}),
 	}
@@ -57,7 +62,7 @@ func initCircuitBreaker(service string, watcher *monitor.ConfigMonitor) *circuit
 		}
 	}
 
-	watcher.AddCallback(onChangeCallback)
+	watcher.RegisterCallback(onChangeCallback, keyCircuitBreaker)
 	return cb
 }
 

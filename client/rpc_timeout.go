@@ -22,9 +22,19 @@ import (
 	"github.com/kitex-contrib/config-file/parser"
 )
 
+const (
+	keyRPCTimeout = "client-rpc-timeout"
+)
+
 // WithRPCTimeout returns a server.Option that sets the timeout provider for the client.
-func WithRPCTimeout(watcher *monitor.ConfigMonitor) kitexclient.Option {
-	return kitexclient.WithTimeoutProvider(initRPCTimeout(watcher))
+func WithRPCTimeout(watcher *monitor.ConfigMonitor) []kitexclient.Option {
+	return []kitexclient.Option{
+		kitexclient.WithTimeoutProvider(initRPCTimeout(watcher)),
+		kitexclient.WithCloseCallbacks(func() error {
+			watcher.DeregisterCallback(keyRPCTimeout)
+			return nil
+		}),
+	}
 }
 
 // initRPCTimeout init the rpc timeout provider
@@ -37,6 +47,6 @@ func initRPCTimeout(watcher *monitor.ConfigMonitor) rpcinfo.TimeoutProvider {
 		rpcTimeoutContainer.NotifyPolicyChange(configs)
 	}
 
-	watcher.AddCallback(onChangeCallback)
+	watcher.RegisterCallback(onChangeCallback, keyRPCTimeout)
 	return rpcTimeoutContainer
 }

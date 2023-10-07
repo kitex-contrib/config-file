@@ -23,12 +23,19 @@ import (
 	"github.com/kitex-contrib/config-file/utils"
 )
 
+const (
+	keyRetry = "client-retry"
+)
+
 // WithRetryPolicy returns a server.Option that sets the retry policies for the client
 func WithRetryPolicy(watcher *monitor.ConfigMonitor) []kitexclient.Option {
 	rc := initRetryContainer(watcher)
 	return []kitexclient.Option{
 		kitexclient.WithRetryContainer(rc),
-		kitexclient.WithCloseCallbacks(rc.Close),
+		kitexclient.WithCloseCallbacks(func() error {
+			watcher.DeregisterCallback(keyRetry)
+			return rc.Close()
+		}),
 	}
 }
 
@@ -66,7 +73,7 @@ func initRetryContainer(watcher *monitor.ConfigMonitor) *retry.Container {
 		}
 	}
 
-	watcher.AddCallback(onChangeCallback)
+	watcher.RegisterCallback(onChangeCallback, keyRetry)
 
 	return retryContainer
 }
