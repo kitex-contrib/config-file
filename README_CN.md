@@ -46,18 +46,21 @@ func (s *EchoImpl) Echo(ctx context.Context, req *api.Request) (resp *api.Respon
 func main() {
 	klog.SetLevel(klog.LevelDebug)
 
-	watcher, err := monitor.NewConfigMonitor(monitor.Options{
-		Key:      key,
-		FilePath: filepath,
-	})
+	// create a file watcher object
+	fw, err := filewatcher.NewFileWatcher(filepath)
 	if err != nil {
 		panic(err)
 	}
+	// start watching file changes
+	if err = fw.StartWatching(); err != nil {
+		panic(err)
+	}
+	defer fw.StopWatching()
 
 	svr := echo.NewServer(
 		new(EchoImpl),
 		server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: serviceName}),
-		server.WithSuite(fileserver.NewSuite(watcher)), // add watcher
+		server.WithSuite(fileserver.NewSuite(key, fw)), // add watcher
 	)
 	if err := svr.Run(); err != nil {
 		log.Println("server stopped with error:", err)
@@ -95,22 +98,33 @@ const (
 func main() {
 	klog.SetLevel(klog.LevelDebug)
 
-	watcher, err := monitor.NewConfigMonitor(monitor.Options{
-		Key:      key,
-		FilePath: filepath,
-	})
+	// create a file watcher object
+	fw, err := filewatcher.NewFileWatcher(filepath)
 	if err != nil {
 		panic(err)
 	}
+	// start watching file changes
+	if err = fw.StartWatching(); err != nil {
+		panic(err)
+	}
+
+	go func() {
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig, os.Interrupt, os.Kill)
+		<-sig
+		fw.StopWatching()
+		os.Exit(1)
+	}()
 
 	client, err := echo.NewClient(
 		serviceName,
-		client.WithHostPorts("0.0.0.0:8888"),
-		client.WithSuite(fileclient.NewSuite(serviceName, watcher)),
+		kitexclient.WithHostPorts("0.0.0.0:8888"),
+		kitexclient.WithSuite(fileclient.NewSuite(serviceName, key, fw)),
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	for {
 		req := &api.Request{Message: "my request"}
 		resp, err := client.Echo(context.Background(), req)
@@ -122,6 +136,7 @@ func main() {
 		time.Sleep(time.Second * 10)
 	}
 }
+
 ```
 
 #### 治理策略
