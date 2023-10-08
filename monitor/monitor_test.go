@@ -15,9 +15,11 @@
 package monitor
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/kitex-contrib/config-file/filewatcher"
 	"github.com/kitex-contrib/config-file/mock"
 	"github.com/kitex-contrib/config-file/parser"
 )
@@ -139,4 +141,60 @@ func TestStop(t *testing.T) {
 		t.Errorf("NewConfigMonitor() error = %v", err)
 	}
 	cm.Stop()
+}
+
+func TestEntireProgress(t *testing.T) {
+	var callbackKey string = "test"
+	var filepath string = "test.json"
+	mapKey := []string{"Test1", "Test2"}
+	// create a file watcher object
+	fw, err := filewatcher.NewFileWatcher(filepath)
+	if err != nil {
+		t.Errorf("NewFileWatcher() error = %v", err)
+	}
+	// start watching file changes
+	if err = fw.StartWatching(); err != nil {
+		t.Errorf("StartWatching() error = %v", err)
+	}
+
+	// create a config monitor object
+	cm, err := NewConfigMonitor(mapKey[0], fw)
+	if err != nil {
+		t.Errorf("NewConfigMonitor() error = %v", err)
+	}
+	// set manager
+	cm.SetManager(&parser.ServerFileManager{})
+	cm.RegisterCallback(testCallback, callbackKey)
+	// start monitoring
+	if err = cm.Start(); err != nil {
+		t.Errorf("Start() error = %v", err)
+	}
+	t.Log("call specific ConfigManager0")
+	fw.CallOnceSpecific(mapKey[0])
+
+	// create a config monitor object
+	cm1, err := NewConfigMonitor(mapKey[1], fw)
+	if err != nil {
+		t.Errorf("NewConfigMonitor() error = %v", err)
+	}
+	// set manager
+	cm1.SetManager(&parser.ServerFileManager{})
+	cm1.RegisterCallback(testCallback, callbackKey)
+	// start monitoring
+	if err = cm1.Start(); err != nil {
+		t.Errorf("Start() error = %v", err)
+	}
+	t.Log("call specific ConfigManager1")
+	fw.CallOnceSpecific(mapKey[1])
+
+	t.Log("call all ConfigManager0 and ConfigManager1")
+	fw.CallOnceAll()
+
+	cm.Stop()
+	cm1.Stop()
+	fw.StopWatching()
+}
+
+func testCallback() {
+	fmt.Println("testCallback callback once")
 }
