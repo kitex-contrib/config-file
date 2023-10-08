@@ -93,6 +93,7 @@ func (c *configMonitor) SetManager(manager parser.ConfigManager) { c.manager = m
 func (c *configMonitor) RegisterCallback(callback func(), key string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+
 	if c.callbacks == nil {
 		c.callbacks = make(map[string]func())
 	}

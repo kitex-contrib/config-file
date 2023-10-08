@@ -102,6 +102,8 @@ func (fw *fileWatcher) DeregisterCallback(key string) {
 
 // Start starts monitoring file changes.
 func (fw *fileWatcher) StartWatching() error {
+	fw.mu.Lock()
+	defer fw.mu.Unlock()
 	err := fw.watcher.Add(fw.filePath)
 	if err != nil {
 		return err
@@ -121,6 +123,8 @@ func (fw *fileWatcher) StartWatching() error {
 
 // Stop stops monitoring file changes.
 func (fw *fileWatcher) StopWatching() {
+	fw.mu.Lock()
+	defer fw.mu.Unlock()
 	klog.Infof("[local] stop watching file: %s", fw.filePath)
 	close(fw.done)
 }
