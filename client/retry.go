@@ -28,7 +28,7 @@ const (
 )
 
 // WithRetryPolicy returns a server.Option that sets the retry policies for the client
-func WithRetryPolicy(watcher *monitor.ConfigMonitor) []kitexclient.Option {
+func WithRetryPolicy(watcher monitor.ConfigMonitor) []kitexclient.Option {
 	rc := initRetryContainer(watcher)
 	return []kitexclient.Option{
 		kitexclient.WithRetryContainer(rc),
@@ -40,7 +40,7 @@ func WithRetryPolicy(watcher *monitor.ConfigMonitor) []kitexclient.Option {
 }
 
 // initRetryOptions init the retry container
-func initRetryContainer(watcher *monitor.ConfigMonitor) *retry.Container {
+func initRetryContainer(watcher monitor.ConfigMonitor) *retry.Container {
 	retryContainer := retry.NewRetryContainerWithPercentageLimit()
 
 	ts := utils.ThreadSafeSet{}

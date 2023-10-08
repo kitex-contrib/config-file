@@ -16,7 +16,6 @@ package monitor
 
 import (
 	"errors"
-	"os"
 	"sync"
 
 	"github.com/cloudwego/kitex/pkg/klog"
@@ -24,18 +23,27 @@ import (
 	"github.com/kitex-contrib/config-file/parser"
 )
 
-type ConfigMonitor struct {
-	manager     parser.ConfigManager     // Manager for the config file
-	config      interface{}              // config details
-	fileWatcher *filewatcher.FileWatcher // local config file watcher
-	callbacks   map[string]func()        // callbacks when config file changed
-	key         string                   // key
-	mu          sync.Mutex               // mutex
+type ConfigMonitor interface {
+	Key() string
+	Config() interface{}
+	Start() error
+	Stop()
+	SetManager(manager parser.ConfigManager)
+	RegisterCallback(callback func(), key string)
+	DeregisterCallback(key string)
+}
+
+type configMonitor struct {
+	manager     parser.ConfigManager    // Manager for the config file
+	config      interface{}             // config details
+	fileWatcher filewatcher.FileWatcher // local config file watcher
+	callbacks   map[string]func()       // callbacks when config file changed
+	key         string                  // key
+	mu          sync.Mutex              // mutex
 }
 
 // NewConfigMonitor init a monitor for the config file
-func NewConfigMonitor(key string, watcher *filewatcher.FileWatcher) (*ConfigMonitor, error) {
-	var err error
+func NewConfigMonitor(key string, watcher filewatcher.FileWatcher) (ConfigMonitor, error) {
 	if key == "" {
 		return nil, errors.New("empty config key")
 	}
@@ -43,39 +51,33 @@ func NewConfigMonitor(key string, watcher *filewatcher.FileWatcher) (*ConfigMoni
 		return nil, errors.New("filewatcher is nil")
 	}
 
-	if err != nil {
-		return nil, err
-	}
-
-	return &ConfigMonitor{
+	return &configMonitor{
 		fileWatcher: watcher,
 		key:         key,
 	}, nil
 }
 
 // Key return the key of the config file
-func (c *ConfigMonitor) Key() string { return c.key }
+func (c *configMonitor) Key() string { return c.key }
 
 // Config return the config details
-func (c *ConfigMonitor) Config() interface{} { return c.config }
+func (c *configMonitor) Config() interface{} { return c.config }
 
 // Start starts the file watch progress
-func (c *ConfigMonitor) Start() error {
+func (c *configMonitor) Start() error {
 	if c.manager == nil {
 		return errors.New("not set manager for config file")
 	}
 
-	data, err := os.ReadFile(c.fileWatcher.FilePath())
-	if err != nil {
-		klog.Errorf("[local] read config file failed: %v\n", err)
+	if err := c.fileWatcher.RegisterCallback(c.parseHandler, c.key); err != nil {
 		return err
 	}
-	c.parseHandler(data)
-	return c.fileWatcher.RegisterCallback(c.parseHandler, c.key) // use key as callback key
+
+	return c.fileWatcher.CallOnceSpecific(c.key)
 }
 
 // Stop stops the file watch progress
-func (c *ConfigMonitor) Stop() {
+func (c *configMonitor) Stop() {
 	for k := range c.callbacks {
 		c.DeregisterCallback(k)
 	}
@@ -85,10 +87,10 @@ func (c *ConfigMonitor) Stop() {
 }
 
 // SetManager set the manager for the config file
-func (c *ConfigMonitor) SetManager(manager parser.ConfigManager) { c.manager = manager }
+func (c *configMonitor) SetManager(manager parser.ConfigManager) { c.manager = manager }
 
 // RegisterCallback add callback function, it will be called when file changed
-func (c *ConfigMonitor) RegisterCallback(callback func(), key string) {
+func (c *configMonitor) RegisterCallback(callback func(), key string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.callbacks == nil {
@@ -98,7 +100,7 @@ func (c *ConfigMonitor) RegisterCallback(callback func(), key string) {
 }
 
 // DeregisterCallback remove callback function.
-func (c *ConfigMonitor) DeregisterCallback(key string) {
+func (c *configMonitor) DeregisterCallback(key string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
@@ -110,7 +112,7 @@ func (c *ConfigMonitor) DeregisterCallback(key string) {
 }
 
 // parseHandler parse and invoke each function in the callbacks array
-func (c *ConfigMonitor) parseHandler(data []byte) {
+func (c *configMonitor) parseHandler(data []byte) {
 	resp := c.manager
 	err := parser.Decode(data, resp)
 	if err != nil {

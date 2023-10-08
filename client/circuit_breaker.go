@@ -30,7 +30,7 @@ const (
 )
 
 // WithCircuitBreaker returns a server.Option that sets the circuit breaker for the client
-func WithCircuitBreaker(service string, watcher *monitor.ConfigMonitor) []kitexclient.Option {
+func WithCircuitBreaker(service string, watcher monitor.ConfigMonitor) []kitexclient.Option {
 	cbSuite := initCircuitBreaker(service, watcher)
 	return []kitexclient.Option{
 		kitexclient.WithCircuitBreaker(cbSuite),
@@ -42,7 +42,7 @@ func WithCircuitBreaker(service string, watcher *monitor.ConfigMonitor) []kitexc
 }
 
 // initCircuitBreaker init the circuitbreaker suite
-func initCircuitBreaker(service string, watcher *monitor.ConfigMonitor) *circuitbreak.CBSuite {
+func initCircuitBreaker(service string, watcher monitor.ConfigMonitor) *circuitbreak.CBSuite {
 	cb := circuitbreak.NewCBSuite(genServiceCBKeyWithRPCInfo)
 	lcb := utils.ThreadSafeSet{}
 

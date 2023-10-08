@@ -29,12 +29,12 @@ const (
 )
 
 // WithLimiter returns a server.Option that sets the limiter for the server.
-func WithLimiter(watcher *monitor.ConfigMonitor) kitexserver.Option {
+func WithLimiter(watcher monitor.ConfigMonitor) kitexserver.Option {
 	return kitexserver.WithLimit(initLimitOptions(watcher))
 }
 
 // initLimitOptions init the limiter options
-func initLimitOptions(watcher *monitor.ConfigMonitor) *limit.Option {
+func initLimitOptions(watcher monitor.ConfigMonitor) *limit.Option {
 	var updater atomic.Value
 	opt := &limit.Option{}
 

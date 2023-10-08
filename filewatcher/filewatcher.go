@@ -24,8 +24,18 @@ import (
 	"github.com/kitex-contrib/config-file/utils"
 )
 
+type FileWatcher interface {
+	FilePath() string
+	RegisterCallback(callback func(data []byte), key string) error
+	DeregisterCallback(key string)
+	StartWatching() error
+	StopWatching()
+	CallOnceAll() error
+	CallOnceSpecific(key string) error
+}
+
 // FileWatcher is used for file monitoring
-type FileWatcher struct {
+type fileWatcher struct {
 	filePath  string                       // The path to the file to be monitored.
 	callbacks map[string]func(data []byte) // Custom functions to be executed when the file changes.
 	watcher   *fsnotify.Watcher            // fsnotify file change watcher.
@@ -34,7 +44,7 @@ type FileWatcher struct {
 }
 
 // NewFileWatcher creates a new FileWatcher instance.
-func NewFileWatcher(filePath string) (*FileWatcher, error) {
+func NewFileWatcher(filePath string) (FileWatcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
@@ -48,7 +58,7 @@ func NewFileWatcher(filePath string) (*FileWatcher, error) {
 		return nil, errors.New("file [" + filePath + "] not exist")
 	}
 
-	fw := &FileWatcher{
+	fw := &fileWatcher{
 		filePath: filePath,
 		watcher:  watcher,
 		done:     make(chan struct{}),
@@ -58,10 +68,10 @@ func NewFileWatcher(filePath string) (*FileWatcher, error) {
 }
 
 // FilePath returns the file address that the current object is listening to
-func (fw *FileWatcher) FilePath() string { return fw.filePath }
+func (fw *fileWatcher) FilePath() string { return fw.filePath }
 
 // RegisterCallback sets the callback function.
-func (fw *FileWatcher) RegisterCallback(callback func(data []byte), key string) error {
+func (fw *fileWatcher) RegisterCallback(callback func(data []byte), key string) error {
 	fw.mu.Lock()
 	defer fw.mu.Unlock()
 
@@ -78,7 +88,7 @@ func (fw *FileWatcher) RegisterCallback(callback func(data []byte), key string) 
 }
 
 // DeregisterCallback remove callback function.
-func (fw *FileWatcher) DeregisterCallback(key string) {
+func (fw *fileWatcher) DeregisterCallback(key string) {
 	fw.mu.Lock()
 	defer fw.mu.Unlock()
 
@@ -91,7 +101,7 @@ func (fw *FileWatcher) DeregisterCallback(key string) {
 }
 
 // Start starts monitoring file changes.
-func (fw *FileWatcher) StartWatching() error {
+func (fw *fileWatcher) StartWatching() error {
 	err := fw.watcher.Add(fw.filePath)
 	if err != nil {
 		return err
@@ -110,13 +120,13 @@ func (fw *FileWatcher) StartWatching() error {
 }
 
 // Stop stops monitoring file changes.
-func (fw *FileWatcher) StopWatching() {
+func (fw *fileWatcher) StopWatching() {
 	klog.Infof("[local] stop watching file: %s", fw.filePath)
 	close(fw.done)
 }
 
 // StartWatching starts monitoring file changes.
-func (fw *FileWatcher) start() {
+func (fw *fileWatcher) start() {
 	defer fw.watcher.Close()
 	for {
 		select {
@@ -125,14 +135,8 @@ func (fw *FileWatcher) start() {
 				return
 			}
 			if event.Has(fsnotify.Write) {
-				data, err := os.ReadFile(fw.filePath)
-				if err != nil {
+				if err := fw.CallOnceAll(); err != nil {
 					klog.Errorf("[local] read config file failed: %v\n", err)
-					return
-				}
-
-				for _, v := range fw.callbacks {
-					v(data)
 				}
 			}
 			if event.Has(fsnotify.Remove) {
@@ -148,4 +152,32 @@ func (fw *FileWatcher) start() {
 			return
 		}
 	}
+}
+
+// CallOnceAll calls the callback function list once.
+func (fw *fileWatcher) CallOnceAll() error {
+	data, err := os.ReadFile(fw.filePath)
+	if err != nil {
+		return err
+	}
+
+	for _, v := range fw.callbacks {
+		v(data)
+	}
+	return nil
+}
+
+// CallOnceSpecific calls the callback function once by key.
+func (fw *fileWatcher) CallOnceSpecific(key string) error {
+	data, err := os.ReadFile(fw.filePath)
+	if err != nil {
+		return err
+	}
+
+	if callback, ok := fw.callbacks[key]; ok {
+		callback(data)
+	} else {
+		return errors.New("not found callback for key: " + key)
+	}
+	return nil
 }

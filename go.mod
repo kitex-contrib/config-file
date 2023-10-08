@@ -5,6 +5,8 @@ go 1.19
 require (
 	github.com/cloudwego/kitex v0.7.2
 	github.com/fsnotify/fsnotify v1.6.0
+	github.com/golang/mock v1.6.0
+	github.com/stretchr/testify v1.8.4
 	sigs.k8s.io/yaml v1.3.0
 )
 
@@ -38,7 +40,6 @@ require (
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/oleiade/lane v1.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/stretchr/testify v1.8.2 // indirect
 	github.com/tidwall/gjson v1.9.3 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect

@@ -22,11 +22,11 @@ import (
 )
 
 type FileConfigServerSuite struct {
-	watcher *monitor.ConfigMonitor
+	watcher monitor.ConfigMonitor
 }
 
 // NewSuite service is the destination service.
-func NewSuite(key string, watcher *filewatcher.FileWatcher) *FileConfigServerSuite {
+func NewSuite(key string, watcher filewatcher.FileWatcher) *FileConfigServerSuite {
 	cm, err := monitor.NewConfigMonitor(key, watcher)
 	if err != nil {
 		panic(err)
