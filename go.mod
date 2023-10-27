@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/cloudwego/kitex v0.7.2
-	github.com/fsnotify/fsnotify v1.6.0
+	github.com/fsnotify/fsnotify v1.7.0
 	github.com/golang/mock v1.6.0
 	github.com/stretchr/testify v1.8.4
 	sigs.k8s.io/yaml v1.3.0

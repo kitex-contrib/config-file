@@ -24,17 +24,15 @@ import (
 	"github.com/kitex-contrib/config-file/parser"
 )
 
-const (
-	keyLimiter = "service-limit"
-)
-
 // WithLimiter returns a server.Option that sets the limiter for the server.
 func WithLimiter(watcher monitor.ConfigMonitor) kitexserver.Option {
-	return kitexserver.WithLimit(initLimitOptions(watcher))
+	opt, keyLimiter := initLimitOptions(watcher)
+	kitexserver.RegisterShutdownHook(func() { watcher.DeregisterCallback(keyLimiter) })
+	return kitexserver.WithLimit(opt)
 }
 
 // initLimitOptions init the limiter options
-func initLimitOptions(watcher monitor.ConfigMonitor) *limit.Option {
+func initLimitOptions(watcher monitor.ConfigMonitor) (*limit.Option, int64) {
 	var updater atomic.Value
 	opt := &limit.Option{}
 
@@ -62,7 +60,7 @@ func initLimitOptions(watcher monitor.ConfigMonitor) *limit.Option {
 		}
 	}
 
-	watcher.RegisterCallback(onChangeCallback, keyLimiter)
+	keyLimiter := watcher.RegisterCallback(onChangeCallback)
 
-	return opt
+	return opt, keyLimiter
 }

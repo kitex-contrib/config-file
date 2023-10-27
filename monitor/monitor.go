@@ -17,6 +17,7 @@ package monitor
 import (
 	"errors"
 	"sync"
+	"sync/atomic"
 
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/kitex-contrib/config-file/filewatcher"
@@ -26,20 +27,24 @@ import (
 type ConfigMonitor interface {
 	Key() string
 	Config() interface{}
+	CallbackSize() int
 	Start() error
+	WatcherID() int64
 	Stop()
 	SetManager(manager parser.ConfigManager)
-	RegisterCallback(callback func(), key string)
-	DeregisterCallback(key string)
+	RegisterCallback(callback func()) int64
+	DeregisterCallback(uniqueID int64)
 }
 
 type configMonitor struct {
 	manager     parser.ConfigManager    // Manager for the config file
 	config      interface{}             // config details
 	fileWatcher filewatcher.FileWatcher // local config file watcher
-	callbacks   map[string]func()       // callbacks when config file changed
-	key         string                  // key
-	mu          sync.Mutex              // mutex
+	callbacks   map[int64]func()        // callbacks when config file changed
+	key         string                  // key of the config in the config file
+	id          int64                   // unique id for filewatcher to register/deregister
+	lock        sync.RWMutex            // mutex
+	counter     atomic.Int64            // unique id for callbacks, only increase
 }
 
 // NewConfigMonitor init a monitor for the config file
@@ -54,6 +59,7 @@ func NewConfigMonitor(key string, watcher filewatcher.FileWatcher) (ConfigMonito
 	return &configMonitor{
 		fileWatcher: watcher,
 		key:         key,
+		callbacks:   make(map[int64]func(), 0),
 	}, nil
 }
 
@@ -63,17 +69,25 @@ func (c *configMonitor) Key() string { return c.key }
 // Config return the config details
 func (c *configMonitor) Config() interface{} { return c.config }
 
+// CallbackSize return the size of the callbacks
+func (c *configMonitor) CallbackSize() int {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	return len(c.callbacks)
+}
+
+// WatcherID return the unique id of the filewatcher
+func (c *configMonitor) WatcherID() int64 { return c.id }
+
 // Start starts the file watch progress
 func (c *configMonitor) Start() error {
 	if c.manager == nil {
 		return errors.New("not set manager for config file")
 	}
 
-	if err := c.fileWatcher.RegisterCallback(c.parseHandler, c.key); err != nil {
-		return err
-	}
+	c.id = c.fileWatcher.RegisterCallback(c.parseHandler)
 
-	return c.fileWatcher.CallOnceSpecific(c.key)
+	return c.fileWatcher.CallOnceSpecific(c.id)
 }
 
 // Stop stops the file watch progress
@@ -83,27 +97,30 @@ func (c *configMonitor) Stop() {
 	}
 
 	// deregister current object's parseHandler from filewatcher
-	c.fileWatcher.DeregisterCallback(c.key)
+	c.fileWatcher.DeregisterCallback(c.id)
 }
 
 // SetManager set the manager for the config file
 func (c *configMonitor) SetManager(manager parser.ConfigManager) { c.manager = manager }
 
-// RegisterCallback add callback function, it will be called when file changed
-func (c *configMonitor) RegisterCallback(callback func(), key string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+// RegisterCallback add callback function, it will be called when file changed, return key for deregister
+func (c *configMonitor) RegisterCallback(callback func()) int64 {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 
 	if c.callbacks == nil {
-		c.callbacks = make(map[string]func())
+		c.callbacks = make(map[int64]func())
 	}
+
+	key := c.counter.Add(1)
 	c.callbacks[key] = callback
+	return key
 }
 
 // DeregisterCallback remove callback function.
-func (c *configMonitor) DeregisterCallback(key string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+func (c *configMonitor) DeregisterCallback(key int64) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 
 	if _, exists := c.callbacks[key]; !exists {
 		klog.Warnf("[local] ConfigMonitor callback %s not registered", key)

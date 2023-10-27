@@ -22,7 +22,7 @@ type ConfigManager interface {
 	GetConfig(key string) interface{}
 }
 
-// DecodeServer parse the config file
+// Decode parse the config file
 func Decode(data []byte, resp interface{}) error {
 	return yaml.Unmarshal(data, resp)
 }

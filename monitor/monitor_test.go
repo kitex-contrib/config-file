@@ -15,13 +15,16 @@
 package monitor
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/kitex-contrib/config-file/filewatcher"
 	"github.com/kitex-contrib/config-file/mock"
 	"github.com/kitex-contrib/config-file/parser"
+)
+
+const (
+	filepath = "./../testdata/test.json"
 )
 
 func TestNewConfigMonitor(t *testing.T) {
@@ -82,7 +85,7 @@ func TestRegisterCallback(t *testing.T) {
 	if err != nil {
 		t.Errorf("NewConfigMonitor() error = %v", err)
 	}
-	cm.RegisterCallback(nil, "")
+	cm.RegisterCallback(nil)
 }
 
 func TestDeregisterCallback(t *testing.T) {
@@ -94,7 +97,7 @@ func TestDeregisterCallback(t *testing.T) {
 	if err != nil {
 		t.Errorf("NewConfigMonitor() error = %v", err)
 	}
-	cm.DeregisterCallback("")
+	cm.DeregisterCallback(1)
 }
 
 func TestStartFailed(t *testing.T) {
@@ -117,8 +120,8 @@ func TestStartSuccess(t *testing.T) {
 
 	m := mock.NewMockFileWatcher(ctrl)
 	m.EXPECT().FilePath().Return("test").AnyTimes()
-	m.EXPECT().RegisterCallback(gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-	m.EXPECT().CallOnceSpecific(gomock.Any()).Return(nil).AnyTimes()
+	m.EXPECT().RegisterCallback(gomock.Any()).Return(int64(0)).AnyTimes()
+	m.EXPECT().CallOnceSpecific(gomock.Eq(int64(0))).Return(nil).AnyTimes()
 
 	cm, err := NewConfigMonitor("test", m)
 	if err != nil {
@@ -143,10 +146,54 @@ func TestStop(t *testing.T) {
 	cm.Stop()
 }
 
-func TestEntireProgress(t *testing.T) {
-	var callbackKey string = "test"
-	var filepath string = "test.json"
-	mapKey := []string{"Test1", "Test2"}
+func TestEntireProgressWithSingleKey(t *testing.T) {
+	testProcess(filepath, []string{"Test1"}, t)
+}
+
+func TestEntireProgressWithDifferentKey(t *testing.T) {
+	testProcess(filepath, []string{"Test1", "Test2"}, t)
+}
+
+func TestEntireProcessWithSameKey(t *testing.T) {
+	testProcess(filepath, []string{"Test1", "Test1"}, t)
+}
+
+func createConfigManager(fw filewatcher.FileWatcher, key string, t *testing.T) ConfigMonitor {
+	// create a config monitor object
+	cm, err := NewConfigMonitor(key, fw)
+	if err != nil {
+		t.Errorf("NewConfigMonitor() error = %v", err)
+	}
+	// set manager
+	cm.SetManager(&parser.ServerFileManager{})
+
+	// register callback
+	id := cm.RegisterCallback(func() {
+		t.Errorf("THIS CALLBACK SHOULD NOT BE INVOKED")
+	})
+
+	cm.RegisterCallback(func() {
+		t.Logf("INVOKE CALLBACK ON CONFIG MANAGER, index: %v\n", cm.WatcherID())
+	})
+	cm.DeregisterCallback(id)
+
+	// start monitoring
+	if err = cm.Start(); err != nil {
+		t.Errorf("Start() error = %v", err)
+	}
+
+	// call specific callback
+	t.Log("call specific ConfigManager0")
+	fw.CallOnceSpecific(id)
+
+	return cm
+}
+
+func testProcess(filepath string, mapKey []string, t *testing.T) {
+	if len(mapKey) < 1 {
+		t.Errorf("mapKey is empty")
+	}
+
 	// create a file watcher object
 	fw, err := filewatcher.NewFileWatcher(filepath)
 	if err != nil {
@@ -157,44 +204,29 @@ func TestEntireProgress(t *testing.T) {
 		t.Errorf("StartWatching() error = %v", err)
 	}
 
-	// create a config monitor object
-	cm, err := NewConfigMonitor(mapKey[0], fw)
-	if err != nil {
-		t.Errorf("NewConfigMonitor() error = %v", err)
-	}
-	// set manager
-	cm.SetManager(&parser.ServerFileManager{})
-	cm.RegisterCallback(testCallback, callbackKey)
-	// start monitoring
-	if err = cm.Start(); err != nil {
-		t.Errorf("Start() error = %v", err)
-	}
-	t.Log("call specific ConfigManager0")
-	fw.CallOnceSpecific(mapKey[0])
+	cm := createConfigManager(fw, mapKey[0], t)
 
-	// create a config monitor object
-	cm1, err := NewConfigMonitor(mapKey[1], fw)
-	if err != nil {
-		t.Errorf("NewConfigMonitor() error = %v", err)
+	// not have enough key
+	if len(mapKey) < 2 {
+		t.Log("Without enough map keys, do not execute multi-key listening test.")
+		cm.Stop()
+		fw.StopWatching()
+		return
 	}
-	// set manager
-	cm1.SetManager(&parser.ServerFileManager{})
-	cm1.RegisterCallback(testCallback, callbackKey)
-	// start monitoring
-	if err = cm1.Start(); err != nil {
-		t.Errorf("Start() error = %v", err)
-	}
-	t.Log("call specific ConfigManager1")
-	fw.CallOnceSpecific(mapKey[1])
 
-	t.Log("call all ConfigManager0 and ConfigManager1")
+	// CREATE ANOTHER NEW CONFIG MONITOR
+	cm1 := createConfigManager(fw, mapKey[1], t)
+
+	t.Log("call all ConfigManager")
 	fw.CallOnceAll()
 
+	t.Log("DeregisterCallback ConfigManager0 and CallOnceAll")
 	cm.Stop()
-	cm1.Stop()
-	fw.StopWatching()
-}
+	fw.CallOnceAll()
 
-func testCallback() {
-	fmt.Println("testCallback callback once")
+	t.Log("DeregisterCallback ConfigManager1 and CallOnceAll")
+	cm1.Stop()
+	fw.CallOnceAll()
+
+	fw.StopWatching()
 }

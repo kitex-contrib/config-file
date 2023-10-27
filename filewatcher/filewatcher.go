@@ -17,7 +17,9 @@ package filewatcher
 import (
 	"errors"
 	"os"
+	"strconv"
 	"sync"
+	"sync/atomic"
 
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/fsnotify/fsnotify"
@@ -26,24 +28,27 @@ import (
 
 type FileWatcher interface {
 	FilePath() string
-	RegisterCallback(callback func(data []byte), key string) error
-	DeregisterCallback(key string)
+	CallbackSize() int
+	RegisterCallback(callback func(data []byte)) int64
+	DeregisterCallback(uniqueID int64)
 	StartWatching() error
 	StopWatching()
 	CallOnceAll() error
-	CallOnceSpecific(key string) error
+	CallOnceSpecific(uniqueID int64) error
 }
 
 // FileWatcher is used for file monitoring
 type fileWatcher struct {
-	filePath  string                       // The path to the file to be monitored.
-	callbacks map[string]func(data []byte) // Custom functions to be executed when the file changes.
-	watcher   *fsnotify.Watcher            // fsnotify file change watcher.
-	done      chan struct{}                // A channel for signaling the watcher to stop.
-	mu        sync.Mutex
+	filePath  string                      // The path to the file to be monitored.
+	callbacks map[int64]func(data []byte) // Custom functions to be executed when the file changes.
+	watcher   *fsnotify.Watcher           // fsnotify file change watcher.
+	done      chan struct{}               // A channel for signaling the watcher to stop.
+	lock      sync.RWMutex                // mutex
+	counter   atomic.Int64                // unique id for callbacks, only increase
 }
 
 // NewFileWatcher creates a new FileWatcher instance.
+// filePath should be a path to a file, not a directory.
 func NewFileWatcher(filePath string) (FileWatcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -59,9 +64,10 @@ func NewFileWatcher(filePath string) (FileWatcher, error) {
 	}
 
 	fw := &fileWatcher{
-		filePath: filePath,
-		watcher:  watcher,
-		done:     make(chan struct{}),
+		filePath:  filePath,
+		watcher:   watcher,
+		done:      make(chan struct{}),
+		callbacks: make(map[int64]func(data []byte), 0),
 	}
 
 	return fw, nil
@@ -70,44 +76,48 @@ func NewFileWatcher(filePath string) (FileWatcher, error) {
 // FilePath returns the file address that the current object is listening to
 func (fw *fileWatcher) FilePath() string { return fw.filePath }
 
+// CallbackSize returns the number of callback functions.
+func (fw *fileWatcher) CallbackSize() int {
+	fw.lock.RLock()
+	defer fw.lock.RUnlock()
+	return len(fw.callbacks)
+}
+
 // RegisterCallback sets the callback function.
-func (fw *fileWatcher) RegisterCallback(callback func(data []byte), key string) error {
-	fw.mu.Lock()
-	defer fw.mu.Unlock()
+func (fw *fileWatcher) RegisterCallback(callback func(data []byte)) int64 {
+	fw.lock.Lock()
+	defer fw.lock.Unlock()
 
 	if fw.callbacks == nil {
-		fw.callbacks = make(map[string]func(data []byte))
+		fw.callbacks = make(map[int64]func(data []byte), 0)
 	}
 
-	if _, exists := fw.callbacks[key]; exists {
-		return errors.New("key " + key + "already exists")
-	}
-
-	fw.callbacks[key] = callback
-	return nil
+	uniqueID := fw.counter.Add(1)
+	fw.callbacks[uniqueID] = callback
+	return uniqueID
 }
 
 // DeregisterCallback remove callback function.
-func (fw *fileWatcher) DeregisterCallback(key string) {
-	fw.mu.Lock()
-	defer fw.mu.Unlock()
+func (fw *fileWatcher) DeregisterCallback(uniqueID int64) {
+	fw.lock.Lock()
+	defer fw.lock.Unlock()
 
-	if _, exists := fw.callbacks[key]; !exists {
-		klog.Warnf("[local] FileWatcher callback %s not registered", key)
+	if _, exists := fw.callbacks[uniqueID]; !exists {
+		klog.Warnf("[local] FileWatcher callback %s not registered", uniqueID)
 		return
 	}
-	delete(fw.callbacks, key)
-	klog.Infof("[local] filewatcher to %v deregistered callback: %v\n", fw.filePath, key)
+	delete(fw.callbacks, uniqueID)
+	klog.Infof("[local] filewatcher to %v deregistered callback id: %v\n", fw.filePath, uniqueID)
 }
 
 // Start starts monitoring file changes.
+// This method will add the file to be monitored to the watcher and start the monitoring process instanctly.
 func (fw *fileWatcher) StartWatching() error {
-	fw.mu.Lock()
-	defer fw.mu.Unlock()
-	err := fw.watcher.Add(fw.filePath)
-	if err != nil {
+	fw.lock.Lock()
+	if err := fw.watcher.Add(fw.filePath); err != nil {
 		return err
 	}
+	fw.lock.Unlock()
 
 	go func() {
 		defer func() {
@@ -122,14 +132,15 @@ func (fw *fileWatcher) StartWatching() error {
 }
 
 // Stop stops monitoring file changes.
+// Stop watching will close the done channel, and do not restart again.
 func (fw *fileWatcher) StopWatching() {
-	fw.mu.Lock()
-	defer fw.mu.Unlock()
+	fw.lock.Lock()
+	defer fw.lock.Unlock()
 	klog.Infof("[local] stop watching file: %s", fw.filePath)
 	close(fw.done)
 }
 
-// StartWatching starts monitoring file changes.
+// start responsible for handling fsnotify event information.
 func (fw *fileWatcher) start() {
 	defer fw.watcher.Close()
 	for {
@@ -151,7 +162,7 @@ func (fw *fileWatcher) start() {
 			if !ok {
 				return
 			}
-			klog.Errorf("file watcher meet error: %v\n", err)
+			klog.Errorf("[local] file watcher meet error: %v\n", err)
 		case <-fw.done:
 			return
 		}
@@ -171,17 +182,17 @@ func (fw *fileWatcher) CallOnceAll() error {
 	return nil
 }
 
-// CallOnceSpecific calls the callback function once by key.
-func (fw *fileWatcher) CallOnceSpecific(key string) error {
+// CallOnceSpecific calls the callback function once by uniqueID.
+func (fw *fileWatcher) CallOnceSpecific(uniqueID int64) error {
 	data, err := os.ReadFile(fw.filePath)
 	if err != nil {
 		return err
 	}
 
-	if callback, ok := fw.callbacks[key]; ok {
+	if callback, ok := fw.callbacks[uniqueID]; ok {
 		callback(data)
 	} else {
-		return errors.New("not found callback for key: " + key)
+		return errors.New("not found callback for uniqueID: " + strconv.FormatInt(uniqueID, 10))
 	}
 	return nil
 }

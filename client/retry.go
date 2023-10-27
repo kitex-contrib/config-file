@@ -23,13 +23,9 @@ import (
 	"github.com/kitex-contrib/config-file/utils"
 )
 
-const (
-	keyRetry = "client-retry"
-)
-
 // WithRetryPolicy returns a server.Option that sets the retry policies for the client
 func WithRetryPolicy(watcher monitor.ConfigMonitor) []kitexclient.Option {
-	rc := initRetryContainer(watcher)
+	rc, keyRetry := initRetryContainer(watcher)
 	return []kitexclient.Option{
 		kitexclient.WithRetryContainer(rc),
 		kitexclient.WithCloseCallbacks(func() error {
@@ -40,7 +36,7 @@ func WithRetryPolicy(watcher monitor.ConfigMonitor) []kitexclient.Option {
 }
 
 // initRetryOptions init the retry container
-func initRetryContainer(watcher monitor.ConfigMonitor) *retry.Container {
+func initRetryContainer(watcher monitor.ConfigMonitor) (*retry.Container, int64) {
 	retryContainer := retry.NewRetryContainerWithPercentageLimit()
 
 	ts := utils.ThreadSafeSet{}
@@ -73,7 +69,7 @@ func initRetryContainer(watcher monitor.ConfigMonitor) *retry.Container {
 		}
 	}
 
-	watcher.RegisterCallback(onChangeCallback, keyRetry)
+	keyRetry := watcher.RegisterCallback(onChangeCallback)
 
-	return retryContainer
+	return retryContainer, keyRetry
 }
