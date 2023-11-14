@@ -17,7 +17,6 @@ package monitor
 import (
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/kitex-contrib/config-file/filewatcher"
 	"github.com/kitex-contrib/config-file/mock"
 	"github.com/kitex-contrib/config-file/parser"
@@ -28,20 +27,14 @@ const (
 )
 
 func TestNewConfigMonitor(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	m := mock.NewMockFileWatcher(ctrl)
+	m := mock.NewMockFileWatcher()
 	if _, err := NewConfigMonitor("test", m); err != nil {
 		t.Errorf("NewConfigMonitor() error = %v", err)
 	}
 }
 
 func TestNewConfigMonitorFailed(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	m := mock.NewMockFileWatcher(ctrl)
+	m := mock.NewMockFileWatcher()
 	if _, err := NewConfigMonitor("", m); err == nil {
 		t.Errorf("NewConfigMonitor() error = %v", err)
 	}
@@ -51,10 +44,7 @@ func TestNewConfigMonitorFailed(t *testing.T) {
 }
 
 func TestKey(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	m := mock.NewMockFileWatcher(ctrl)
+	m := mock.NewMockFileWatcher()
 	cm, err := NewConfigMonitor("test", m)
 	if err != nil {
 		t.Errorf("NewConfigMonitor() error = %v", err)
@@ -65,10 +55,7 @@ func TestKey(t *testing.T) {
 }
 
 func TestSetManager(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	m := mock.NewMockFileWatcher(ctrl)
+	m := mock.NewMockFileWatcher()
 	cm, err := NewConfigMonitor("test", m)
 	if err != nil {
 		t.Errorf("NewConfigMonitor() error = %v", err)
@@ -77,10 +64,7 @@ func TestSetManager(t *testing.T) {
 }
 
 func TestRegisterCallback(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	m := mock.NewMockFileWatcher(ctrl)
+	m := mock.NewMockFileWatcher()
 	cm, err := NewConfigMonitor("test", m)
 	if err != nil {
 		t.Errorf("NewConfigMonitor() error = %v", err)
@@ -89,10 +73,7 @@ func TestRegisterCallback(t *testing.T) {
 }
 
 func TestDeregisterCallback(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	m := mock.NewMockFileWatcher(ctrl)
+	m := mock.NewMockFileWatcher()
 	cm, err := NewConfigMonitor("test", m)
 	if err != nil {
 		t.Errorf("NewConfigMonitor() error = %v", err)
@@ -101,10 +82,7 @@ func TestDeregisterCallback(t *testing.T) {
 }
 
 func TestStartFailed(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	m := mock.NewMockFileWatcher(ctrl)
+	m := mock.NewMockFileWatcher()
 	cm, err := NewConfigMonitor("test", m)
 	if err != nil {
 		t.Errorf("NewConfigMonitor() error = %v", err)
@@ -115,14 +93,7 @@ func TestStartFailed(t *testing.T) {
 }
 
 func TestStartSuccess(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	m := mock.NewMockFileWatcher(ctrl)
-	m.EXPECT().FilePath().Return("test").AnyTimes()
-	m.EXPECT().RegisterCallback(gomock.Any()).Return(int64(0)).AnyTimes()
-	m.EXPECT().CallOnceSpecific(gomock.Eq(int64(0))).Return(nil).AnyTimes()
-
+	m := mock.NewMockFileWatcher()
 	cm, err := NewConfigMonitor("test", m)
 	if err != nil {
 		t.Errorf("NewConfigMonitor() error = %v", err)
@@ -134,11 +105,7 @@ func TestStartSuccess(t *testing.T) {
 }
 
 func TestStop(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	m := mock.NewMockFileWatcher(ctrl)
-	m.EXPECT().DeregisterCallback(gomock.Any()).AnyTimes()
+	m := mock.NewMockFileWatcher()
 	cm, err := NewConfigMonitor("test", m)
 	if err != nil {
 		t.Errorf("NewConfigMonitor() error = %v", err)
