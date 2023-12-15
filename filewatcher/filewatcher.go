@@ -92,6 +92,8 @@ func (fw *fileWatcher) RegisterCallback(callback func(data []byte)) int64 {
 		fw.callbacks = make(map[int64]func(data []byte), 0)
 	}
 
+	klog.Debugf("[local] filewatcher to %v registered callback\n", fw.filePath)
+
 	uniqueID := fw.counter.Add(1)
 	fw.callbacks[uniqueID] = callback
 	return uniqueID
@@ -122,7 +124,7 @@ func (fw *fileWatcher) StartWatching() error {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				klog.Errorf("file watcher panic: %v\n", r)
+				klog.Errorf("[local] file watcher panic: %v\n", r)
 			}
 		}()
 		fw.start()
@@ -176,8 +178,12 @@ func (fw *fileWatcher) CallOnceAll() error {
 		return err
 	}
 
-	for _, v := range fw.callbacks {
-		v(data)
+	for key, callback := range fw.callbacks {
+		if callback == nil {
+			fw.DeregisterCallback(key) // When encountering Nil's callback function, directly cancel it here.
+			continue
+		}
+		callback(data)
 	}
 	return nil
 }
@@ -192,7 +198,7 @@ func (fw *fileWatcher) CallOnceSpecific(uniqueID int64) error {
 	if callback, ok := fw.callbacks[uniqueID]; ok {
 		callback(data)
 	} else {
-		return errors.New("not found callback for uniqueID: " + strconv.FormatInt(uniqueID, 10))
+		return errors.New("not found callback for id: " + strconv.FormatInt(uniqueID, 10))
 	}
 	return nil
 }

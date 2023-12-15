@@ -21,7 +21,6 @@ import (
 	"github.com/cloudwego/kitex/pkg/limit"
 	kitexserver "github.com/cloudwego/kitex/server"
 	"github.com/kitex-contrib/config-file/monitor"
-	"github.com/kitex-contrib/config-file/parser"
 )
 
 // WithLimiter returns a server.Option that sets the limiter for the server.
@@ -43,7 +42,11 @@ func initLimitOptions(watcher monitor.ConfigMonitor) (*limit.Option, int64) {
 	}
 
 	onChangeCallback := func() {
-		lc := watcher.Config().(*parser.ServerFileConfig).Limit
+		config := getFileConfig(watcher)
+		if config == nil {
+			return // config is nil, do nothing, log will be printed in getFileConfig
+		}
+		lc := config.Limit
 
 		opt.MaxConnections = int(lc.ConnectionLimit)
 		opt.MaxQPS = int(lc.QPSLimit)

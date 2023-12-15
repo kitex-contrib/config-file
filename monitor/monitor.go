@@ -114,6 +114,8 @@ func (c *configMonitor) RegisterCallback(callback func()) int64 {
 
 	key := c.counter.Add(1)
 	c.callbacks[key] = callback
+
+	klog.Debugf("[local] config monitor registered callback, id: %v\n", key)
 	return key
 }
 
@@ -145,7 +147,11 @@ func (c *configMonitor) parseHandler(data []byte) {
 	}
 
 	if len(c.callbacks) > 0 {
-		for _, callback := range c.callbacks {
+		for key, callback := range c.callbacks {
+			if callback == nil {
+				c.DeregisterCallback(key) // When encountering Nil's callback function, directly cancel it here.
+				continue
+			}
 			callback()
 		}
 	}

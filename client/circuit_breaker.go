@@ -21,7 +21,6 @@ import (
 	"github.com/cloudwego/kitex/pkg/circuitbreak"
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	"github.com/kitex-contrib/config-file/monitor"
-	"github.com/kitex-contrib/config-file/parser"
 	"github.com/kitex-contrib/config-file/utils"
 )
 
@@ -44,9 +43,12 @@ func initCircuitBreaker(service string, watcher monitor.ConfigMonitor) (*circuit
 
 	onChangeCallback := func() {
 		set := utils.Set{}
-		configs := watcher.Config().(*parser.ClientFileConfig).Circuitbreaker
+		config := getFileConfig(watcher)
+		if config == nil {
+			return // config is nil, do nothing, log will be printed in getFileConfig
+		}
 
-		for method, config := range configs {
+		for method, config := range config.Circuitbreaker {
 			set[method] = true
 			key := genServiceCBKey(service, method)
 			cb.UpdateServiceCBConfig(key, *config)

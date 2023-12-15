@@ -19,7 +19,6 @@ import (
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/cloudwego/kitex/pkg/retry"
 	"github.com/kitex-contrib/config-file/monitor"
-	"github.com/kitex-contrib/config-file/parser"
 	"github.com/kitex-contrib/config-file/utils"
 )
 
@@ -43,7 +42,11 @@ func initRetryContainer(watcher monitor.ConfigMonitor) (*retry.Container, int64)
 
 	onChangeCallback := func() {
 		// the key is method name, wildcard "*" can match anything.
-		rcs := watcher.Config().(*parser.ClientFileConfig).Retry
+		config := getFileConfig(watcher)
+		if config == nil {
+			return // config is nil, do nothing, log will be printed in getFileConfig
+		}
+		rcs := config.Retry
 		set := utils.Set{}
 
 		for method, policy := range rcs {
