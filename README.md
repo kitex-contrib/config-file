@@ -6,6 +6,12 @@ Read, load, and listen to local configuration files
 
 ## Usage
 
+### Supported file types
+
+| json | yaml |
+| ---  | --- |
+| &#10004; | &#10004; |
+
 ### Basic
 
 #### Server
