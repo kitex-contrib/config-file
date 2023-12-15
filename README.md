@@ -1,4 +1,4 @@
-# config-local (*This is a community driven project*)
+# config-file (*This is a community driven project*)
 
 [中文](https://github.com/kitex-contrib/config-file/blob/main/README_CN.md)
 

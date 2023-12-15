@@ -1,4 +1,4 @@
-# config-local
+# config-file
 
 [English](https://github.com/kitex-contrib/config-file/blob/main/README.md)
 
