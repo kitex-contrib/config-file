@@ -150,6 +150,7 @@ func (c *configMonitor) parseHandler(data []byte) {
 		for key, callback := range c.callbacks {
 			if callback == nil {
 				c.DeregisterCallback(key) // When encountering Nil's callback function, directly cancel it here.
+				klog.Warnf("[local] filewatcher callback %v is nil, deregister it", key)
 				continue
 			}
 			callback()

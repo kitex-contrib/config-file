@@ -181,6 +181,7 @@ func (fw *fileWatcher) CallOnceAll() error {
 	for key, callback := range fw.callbacks {
 		if callback == nil {
 			fw.DeregisterCallback(key) // When encountering Nil's callback function, directly cancel it here.
+			klog.Warnf("[local] filewatcher callback %v is nil, deregister it", key)
 			continue
 		}
 		callback(data)
