@@ -133,7 +133,7 @@ func (fw *fileWatcher) StartWatching() error {
 	return nil
 }
 
-// Stop stops monitoring file changes.
+// StopWatching Stop stops monitoring file changes.
 // Stop watching will close the done channel, and do not restart again.
 func (fw *fileWatcher) StopWatching() {
 	fw.lock.Lock()

@@ -1,6 +1,6 @@
 # config-file
 
-[English](https://github.com/kitex-contrib/config-file/blob/main/README.md)
+[English](README.md)
 
 读取、加载并监听本地配置文件
 

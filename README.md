@@ -1,6 +1,6 @@
 # config-file (*This is a community driven project*)
 
-[中文](https://github.com/kitex-contrib/config-file/blob/main/README_CN.md)
+[中文](README_CN.md)
 
 Read, load, and listen to local configuration files
 
