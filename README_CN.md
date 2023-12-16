@@ -1,20 +1,20 @@
-# config-file (*This is a community driven project*)
+# config-file
 
-[中文](README_CN.md)
+[English](README.md)
 
-Read, load, and listen to local configuration files
+读取、加载并监听本地配置文件
 
-## Usage
+## 使用说明
 
-### Supported file types
+### 支持文件类型
 
 | json | yaml |
 | ---  | --- |
 | &#10004; | &#10004; |
 
-### Basic
+### 基本使用
 
-#### Server
+#### 服务端
 
 ```go
 package main
@@ -65,8 +65,8 @@ func main() {
 
 	svr := echo.NewServer(
 		new(EchoImpl),
-		kitexserver.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: serviceName}),
-		kitexserver.WithSuite(fileserver.NewSuite(key, fw)), // add watcher
+		server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: serviceName}),
+		server.WithSuite(fileserver.NewSuite(key, fw)), // add watcher
 	)
 	if err := svr.Run(); err != nil {
 		log.Println("server stopped with error:", err)
@@ -76,7 +76,7 @@ func main() {
 }
 ```
 
-#### Client
+#### 客户端
 
 ```go
 package main
@@ -147,20 +147,20 @@ func main() {
 
 ```
 
-#### Governance Policy
-> The service name is `ServiceName` and the client name is `ClientName`.
+#### 治理策略
+> 服务名称为 ServiceName，客户端名称为 ClientName
 
-##### Rate Limit Category=limit
-> Currently, current limiting only supports the server side, so ClientServiceName is empty.
+##### 限流：Category=limit
+> 限流目前只支持服务端，所以只需要设置服务端的 ServiceName。
 
 [JSON Schema](https://github.com/cloudwego/kitex/blob/develop/pkg/limiter/item_limiter.go#L33)
 
-|Variable|Introduction|
+|字段|说明|
 |----|----|
-|connection_limit| Maximum concurrent connections |
-|qps_limit| Maximum request number every 100ms |
+|connection_limit|最大并发数量|
+|qps_limit|每 100ms 内的最大请求数量|
 
-Example:
+样例:
 ```json
 {
     "ServiceName": {
@@ -172,21 +172,21 @@ Example:
 }
 ```
 
-Note:
+注：
 
-- The granularity of the current limit configuration is server global, regardless of client or method.
-- Not configured or value is 0 means not enabled.
-- connection_limit and qps_limit can be configured independently, e.g. connection_limit = 100, qps_limit = 0
+- 限流配置的粒度是 Server 全局，不分 client、method
+- 「未配置」或「取值为 0」表示不开启
+- connection_limit 和 qps_limit 可以独立配置，例如 connection_limit = 100, qps_limit = 0
 
-##### Retry Policy Category=retry
+##### 重试：Category=retry
 [JSON Schema](https://github.com/cloudwego/kitex/blob/develop/pkg/retry/policy.go#L63)
 
-|Variable|Introduction|
+|参数|说明|
 |----|----|
 |type| 0: failure_policy 1: backup_policy|
-|failure_policy.backoff_policy| Can only be set one of `fixed` `none` `random` |
+|failure_policy.backoff_policy| 可以设置的策略： `fixed` `none` `random` |
 
-Example：
+样例：
 ```json
 {
     "ClientName/ServiceName": {
@@ -222,13 +222,13 @@ Example：
     }
 }
 ```
-Note: retry.Container has built-in support for specifying the default configuration using the `*` wildcard (see the [getRetryer](https://github.com/cloudwego/kitex/blob/v0.5.1/pkg/retry/retryer.go#L240) method for details).
+注：retry.Container 内置支持用 * 通配符指定默认配置（详见 [getRetryer](https://github.com/cloudwego/kitex/blob/v0.5.1/pkg/retry/retryer.go#L240) 方法）
 
-##### RPC Timeout Category=rpc_timeout
+##### 超时：Category=rpc_timeout
 
 [JSON Schema](https://github.com/cloudwego/kitex/blob/develop/pkg/rpctimeout/item_rpc_timeout.go#L42)
 
-Example：
+样例：
 ```json
 {
     "ClientName/ServiceName": {
@@ -246,19 +246,17 @@ Example：
 }
 ```
 
-##### Circuit Break: Category=circuit_break
+##### 熔断: Category=circuit_break
 
 [JSON Schema](https://github.com/cloudwego/kitex/blob/develop/pkg/circuitbreak/item_circuit_breaker.go#L30)
 
-|Variable|Introduction|
+|参数|说明|
 |----|----|
-|min_sample| Minimum statistical sample number|
+|min_sample|最小的统计样本数|
 
-The echo method uses the following configuration (0.3, 100) and other methods use the global default configuration (0.5, 200)
-
-Example：
+样例：
+echo 方法使用下面的配置（0.3、100），其他方法使用全局默认配置（0.5、200）
 ```json
-
 {
     "ClientName/ServiceName": {
         "circuitbreaker": {
@@ -271,15 +269,17 @@ Example：
     }
 }
 ```
+注：kitex 的熔断实现目前不支持修改全局默认配置（详见 [initServiceCB](https://github.com/cloudwego/kitex/blob/v0.5.1/pkg/circuitbreak/cbsuite.go#L195)）
+### 更多信息
 
-Note: The circuit breaker implementation of kitex does not currently support changing the global default configuration (see [initServiceCB](https://github.com/cloudwego/kitex/blob/v0.5.1/pkg/circuitbreak/cbsuite.go#L195) for details).
-### More Info
+更多示例请参考 [example](https://github.com/kitex-contrib/config-file/tree/main/example)
 
-Refer to [example](https://github.com/kitex-contrib/config-file/tree/main/example) for more usage.
 
-## Note
+## 注意事项
 
-For client configuration, you should write all their configurations in the same pair of `$UserServiceName/$ServerServiceName`, for example
+### 自定义键
+
+对于客户端配置，您应该将它们的所有配置写入同一对`$UserServiceName/$ServerServiceName`中，例如
 
 ```json
 {
