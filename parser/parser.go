@@ -15,14 +15,52 @@
 package parser
 
 import (
+	"fmt"
+
+	"github.com/bytedance/sonic"
 	"sigs.k8s.io/yaml"
 )
+
+type ConfigParam struct {
+	Type ConfigType
+}
+
+// CustomFunction use for customize the config parameters.
+type (
+	ConfigType     string
+	ConfigFunction func(*ConfigParam)
+)
+
+const (
+	JSON ConfigType = "json"
+	YAML ConfigType = "yaml"
+)
+
+// ConfigParser the parser for config file.
+type ConfigParser interface {
+	Decode(kind ConfigType, data []byte, config interface{}) error
+}
+
+type Parser struct{}
 
 type ConfigManager interface {
 	GetConfig(key string) interface{}
 }
 
-// Decode parse the config file
-func Decode(data []byte, resp interface{}) error {
-	return yaml.Unmarshal(data, resp)
+var _ ConfigParser = &Parser{}
+
+// Decode decodes the data to struct in specified format.
+func (p *Parser) Decode(kind ConfigType, data []byte, config interface{}) error {
+	switch kind {
+	case JSON:
+		return sonic.Unmarshal(data, config)
+	case YAML:
+		return yaml.Unmarshal(data, config)
+	default:
+		return fmt.Errorf("user customize config data type %s", kind)
+	}
+}
+
+func DefaultConfigParse() ConfigParser {
+	return &Parser{}
 }

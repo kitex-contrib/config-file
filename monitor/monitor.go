@@ -32,11 +32,14 @@ type ConfigMonitor interface {
 	WatcherID() int64
 	Stop()
 	SetManager(manager parser.ConfigManager)
+	SetParser(parser parser.ConfigParser)
 	RegisterCallback(callback func()) int64
 	DeregisterCallback(uniqueID int64)
 }
 
 type configMonitor struct {
+	// support customise parser
+	parser      parser.ConfigParser     // Parser for the config file
 	manager     parser.ConfigManager    // Manager for the config file
 	config      interface{}             // config details
 	fileWatcher filewatcher.FileWatcher // local config file watcher
@@ -60,6 +63,7 @@ func NewConfigMonitor(key string, watcher filewatcher.FileWatcher) (ConfigMonito
 		fileWatcher: watcher,
 		key:         key,
 		callbacks:   make(map[int64]func(), 0),
+		parser:      parser.DefaultConfigParse(),
 	}, nil
 }
 
@@ -103,6 +107,11 @@ func (c *configMonitor) Stop() {
 // SetManager set the manager for the config file
 func (c *configMonitor) SetManager(manager parser.ConfigManager) { c.manager = manager }
 
+// SetParser set the parser for the config file
+func (c *configMonitor) SetParser(parser parser.ConfigParser) {
+	c.parser = parser
+}
+
 // RegisterCallback add callback function, it will be called when file changed, return key for deregister
 func (c *configMonitor) RegisterCallback(callback func()) int64 {
 	c.lock.Lock()
@@ -134,7 +143,11 @@ func (c *configMonitor) DeregisterCallback(key int64) {
 // parseHandler parse and invoke each function in the callbacks array
 func (c *configMonitor) parseHandler(data []byte) {
 	resp := c.manager
-	err := parser.Decode(data, resp)
+
+	param := &parser.ConfigParam{
+		Type: parser.JSON,
+	}
+	err := c.parser.Decode(param.Type, data, resp)
 	if err != nil {
 		klog.Errorf("[local] failed to parse the config file: %v\n", err)
 		return
