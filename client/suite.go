@@ -19,6 +19,7 @@ import (
 	"github.com/kitex-contrib/config-file/filewatcher"
 	"github.com/kitex-contrib/config-file/monitor"
 	"github.com/kitex-contrib/config-file/parser"
+
 )
 
 type FileConfigClientSuite struct {
@@ -42,6 +43,7 @@ func NewSuite(service, key string, watcher filewatcher.FileWatcher) *FileConfigC
 // Options return a list client.Option
 func (s *FileConfigClientSuite) Options() []kitexclient.Option {
 	s.watcher.SetManager(&parser.ClientFileManager{})
+	s.watcher.SetParser(&parser.Parser{})
 
 	opts := make([]kitexclient.Option, 0, 7)
 	opts = append(opts, WithRetryPolicy(s.watcher)...)

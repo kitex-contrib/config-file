@@ -19,6 +19,7 @@ import (
 	"github.com/kitex-contrib/config-file/filewatcher"
 	"github.com/kitex-contrib/config-file/monitor"
 	"github.com/kitex-contrib/config-file/parser"
+
 )
 
 type FileConfigServerSuite struct {
@@ -40,6 +41,7 @@ func NewSuite(key string, watcher filewatcher.FileWatcher) *FileConfigServerSuit
 // Options return a list client.Option
 func (s *FileConfigServerSuite) Options() []kitexserver.Option {
 	s.watcher.SetManager(&parser.ServerFileManager{})
+	s.watcher.SetParser(&parser.Parser{})
 
 	opts := make([]kitexserver.Option, 0, 1)
 	opts = append(opts, WithLimiter(s.watcher))

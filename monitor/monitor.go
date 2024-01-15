@@ -22,6 +22,7 @@ import (
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/kitex-contrib/config-file/filewatcher"
 	"github.com/kitex-contrib/config-file/parser"
+
 )
 
 type ConfigMonitor interface {
@@ -33,6 +34,7 @@ type ConfigMonitor interface {
 	Stop()
 	SetManager(manager parser.ConfigManager)
 	SetParser(parser parser.ConfigParser)
+	ConfigParse(kind parser.ConfigType, data []byte, config interface{}) error
 	RegisterCallback(callback func()) int64
 	DeregisterCallback(uniqueID int64)
 }
@@ -110,6 +112,11 @@ func (c *configMonitor) SetManager(manager parser.ConfigManager) { c.manager = m
 // SetParser set the parser for the config file
 func (c *configMonitor) SetParser(parser parser.ConfigParser) {
 	c.parser = parser
+}
+
+// ConfigParse call configMonitor.parser.Decode()
+func (c *configMonitor) ConfigParse(kind parser.ConfigType, data []byte, config interface{}) error {
+	return c.parser.Decode(kind, data, config)
 }
 
 // RegisterCallback add callback function, it will be called when file changed, return key for deregister

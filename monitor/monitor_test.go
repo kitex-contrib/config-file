@@ -70,6 +70,15 @@ func TestSetParser(t *testing.T) {
 		t.Errorf("NewConfigMonitor() error = %v", err)
 	}
 	cm.SetParser(&parser.Parser{})
+
+	// use json format test ConfigParse
+	kind := parser.JSON
+	jsonData := []byte(`{"key": "value"}`)
+	var config struct{}
+	err = cm.ConfigParse(kind, jsonData, &config)
+	if err != nil {
+		t.Errorf("ConfigParse() error = %v", err)
+	}
 }
 
 func TestRegisterCallback(t *testing.T) {
