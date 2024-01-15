@@ -24,24 +24,32 @@ import (
 
 type FileConfigServerSuite struct {
 	watcher monitor.ConfigMonitor
+	fns []parser.CustomFunction
 }
 
 // NewSuite service is the destination service.
-func NewSuite(key string, watcher filewatcher.FileWatcher) *FileConfigServerSuite {
+func NewSuite(key string, watcher filewatcher.FileWatcher, cp parser.ConfigParser, cfs ...parser.CustomFunction) *FileConfigServerSuite {
 	cm, err := monitor.NewConfigMonitor(key, watcher)
 	if err != nil {
 		panic(err)
 	}
 
+	if cp == nil {
+		cm.SetParser(parser.DefaultConfigParse())
+	} else {
+		// use customized parser
+		cm.SetParser(cp)
+	}
+
 	return &FileConfigServerSuite{
 		watcher: cm,
+		fns: cfs,
 	}
 }
 
 // Options return a list client.Option
 func (s *FileConfigServerSuite) Options() []kitexserver.Option {
 	s.watcher.SetManager(&parser.ServerFileManager{})
-	s.watcher.SetParser(&parser.Parser{})
 
 	opts := make([]kitexserver.Option, 0, 1)
 	opts = append(opts, WithLimiter(s.watcher))

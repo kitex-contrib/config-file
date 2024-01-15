@@ -28,7 +28,7 @@ type ConfigParam struct {
 // CustomFunction use for customize the config parameters.
 type (
 	ConfigType     string
-	ConfigFunction func(*ConfigParam)
+	CustomFunction func(*ConfigParam)
 )
 
 const (
@@ -57,7 +57,7 @@ func (p *Parser) Decode(kind ConfigType, data []byte, config interface{}) error 
 	case YAML:
 		return yaml.Unmarshal(data, config)
 	default:
-		return fmt.Errorf("user customize config data type %s", kind)
+		return fmt.Errorf("unsupported config data type %s", kind)
 	}
 }
 

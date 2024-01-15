@@ -27,6 +27,7 @@ import (
 	"github.com/cloudwego/kitex/pkg/klog"
 	fileclient "github.com/kitex-contrib/config-file/client"
 	"github.com/kitex-contrib/config-file/filewatcher"
+	"github.com/kitex-contrib/config-file/parser"
 )
 
 const (
@@ -57,10 +58,15 @@ func main() {
 		os.Exit(1)
 	}()
 
+	// customize configParam by customFunction
+	fn := func(cp *parser.ConfigParam) {
+		klog.Infof("file config %v", cp)
+	}
+
 	client, err := echo.NewClient(
 		serviceName,
 		kitexclient.WithHostPorts("0.0.0.0:8888"),
-		kitexclient.WithSuite(fileclient.NewSuite(serviceName, key, fw)),
+		kitexclient.WithSuite(fileclient.NewSuite(serviceName, key, fw, nil, fn)),
 	)
 	if err != nil {
 		log.Fatal(err)

@@ -19,31 +19,38 @@ import (
 	"github.com/kitex-contrib/config-file/filewatcher"
 	"github.com/kitex-contrib/config-file/monitor"
 	"github.com/kitex-contrib/config-file/parser"
-
 )
 
 type FileConfigClientSuite struct {
 	watcher monitor.ConfigMonitor
 	service string
+	fns     []parser.CustomFunction
 }
 
 // NewSuite service is the destination service.
-func NewSuite(service, key string, watcher filewatcher.FileWatcher) *FileConfigClientSuite {
+func NewSuite(service, key string, watcher filewatcher.FileWatcher, cp parser.ConfigParser, cfs ...parser.CustomFunction) *FileConfigClientSuite {
 	cm, err := monitor.NewConfigMonitor(key, watcher)
 	if err != nil {
 		panic(err)
 	}
 
+	if cp == nil {
+		cm.SetParser(parser.DefaultConfigParse())
+	} else {
+		// use customized parser
+		cm.SetParser(cp)
+	}
+
 	return &FileConfigClientSuite{
 		watcher: cm,
 		service: service,
+		fns:     cfs,
 	}
 }
 
 // Options return a list client.Option
 func (s *FileConfigClientSuite) Options() []kitexclient.Option {
 	s.watcher.SetManager(&parser.ClientFileManager{})
-	s.watcher.SetParser(&parser.Parser{})
 
 	opts := make([]kitexclient.Option, 0, 7)
 	opts = append(opts, WithRetryPolicy(s.watcher)...)
