@@ -22,7 +22,6 @@ import (
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/kitex-contrib/config-file/filewatcher"
 	"github.com/kitex-contrib/config-file/parser"
-
 )
 
 type ConfigMonitor interface {

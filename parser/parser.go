@@ -25,10 +25,8 @@ type ConfigParam struct {
 	Type ConfigType
 }
 
-// CustomFunction use for customize the config parameters.
 type (
-	ConfigType     string
-	CustomFunction func(*ConfigParam)
+	ConfigType string
 )
 
 const (

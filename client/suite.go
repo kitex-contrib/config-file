@@ -24,11 +24,10 @@ import (
 type FileConfigClientSuite struct {
 	watcher monitor.ConfigMonitor
 	service string
-	fns     []parser.CustomFunction
 }
 
 // NewSuite service is the destination service.
-func NewSuite(service, key string, watcher filewatcher.FileWatcher, cp parser.ConfigParser, cfs ...parser.CustomFunction) *FileConfigClientSuite {
+func NewSuite(service, key string, watcher filewatcher.FileWatcher, cp parser.ConfigParser) *FileConfigClientSuite {
 	cm, err := monitor.NewConfigMonitor(key, watcher)
 	if err != nil {
 		panic(err)
@@ -44,7 +43,6 @@ func NewSuite(service, key string, watcher filewatcher.FileWatcher, cp parser.Co
 	return &FileConfigClientSuite{
 		watcher: cm,
 		service: service,
-		fns:     cfs,
 	}
 }
 

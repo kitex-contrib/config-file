@@ -24,7 +24,6 @@ import (
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	kitexserver "github.com/cloudwego/kitex/server"
 	"github.com/kitex-contrib/config-file/filewatcher"
-	"github.com/kitex-contrib/config-file/parser"
 	fileserver "github.com/kitex-contrib/config-file/server"
 
 )
@@ -60,15 +59,10 @@ func main() {
 	}
 	defer fw.StopWatching()
 
-	// customize configParam by customFunction
-	fn := func(cp *parser.ConfigParam) {
-		klog.Infof("file config %v", cp)
-	}
-
 	svr := echo.NewServer(
 		new(EchoImpl),
 		kitexserver.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: serviceName}),
-		kitexserver.WithSuite(fileserver.NewSuite(key, fw, nil,fn)), // add watcher
+		kitexserver.WithSuite(fileserver.NewSuite(key, fw, nil)), // add watcher
 	)
 	if err := svr.Run(); err != nil {
 		log.Println("server stopped with error:", err)

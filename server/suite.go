@@ -19,16 +19,14 @@ import (
 	"github.com/kitex-contrib/config-file/filewatcher"
 	"github.com/kitex-contrib/config-file/monitor"
 	"github.com/kitex-contrib/config-file/parser"
-
 )
 
 type FileConfigServerSuite struct {
 	watcher monitor.ConfigMonitor
-	fns []parser.CustomFunction
 }
 
 // NewSuite service is the destination service.
-func NewSuite(key string, watcher filewatcher.FileWatcher, cp parser.ConfigParser, cfs ...parser.CustomFunction) *FileConfigServerSuite {
+func NewSuite(key string, watcher filewatcher.FileWatcher, cp parser.ConfigParser) *FileConfigServerSuite {
 	cm, err := monitor.NewConfigMonitor(key, watcher)
 	if err != nil {
 		panic(err)
@@ -43,7 +41,6 @@ func NewSuite(key string, watcher filewatcher.FileWatcher, cp parser.ConfigParse
 
 	return &FileConfigServerSuite{
 		watcher: cm,
-		fns: cfs,
 	}
 }
 
