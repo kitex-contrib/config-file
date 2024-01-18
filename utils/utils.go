@@ -18,7 +18,14 @@ import (
 	"errors"
 	"io/fs"
 	"os"
+
+	"github.com/kitex-contrib/config-file/parser"
 )
+
+type Options struct {
+	CustomParser parser.ConfigParser
+	CustomParams *parser.ConfigParam
+}
 
 // PathExists check whether the file or directory exists
 func PathExists(path string) (bool, error) {

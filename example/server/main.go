@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/cloudwego/kitex-examples/kitex_gen/api"
@@ -24,16 +25,18 @@ import (
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	kitexserver "github.com/cloudwego/kitex/server"
 	"github.com/kitex-contrib/config-file/filewatcher"
+	"github.com/kitex-contrib/config-file/parser"
 	fileserver "github.com/kitex-contrib/config-file/server"
-
+	"github.com/kitex-contrib/config-file/utils"
 )
 
 var _ api.Echo = &EchoImpl{}
 
 const (
-	filepath    = "kitex_server.json"
-	key         = "ServiceName"
-	serviceName = "ServiceName"
+	filepath                      = "kitex_server.json"
+	key                           = "ServiceName"
+	serviceName                   = "ServiceName"
+	INI         parser.ConfigType = "ini"
 )
 
 // EchoImpl implements the last service interface defined in the IDL.
@@ -43,6 +46,13 @@ type EchoImpl struct{}
 func (s *EchoImpl) Echo(ctx context.Context, req *api.Request) (resp *api.Response, err error) {
 	klog.Info("echo called")
 	return &api.Response{Message: req.Message}, nil
+}
+
+// Customed by user
+type MyParser struct{}
+
+func (p *MyParser) Decode(kind parser.ConfigType, data []byte, config interface{}) error {
+	return fmt.Errorf("my custom parser: %s parser", kind)
 }
 
 func main() {
@@ -59,10 +69,13 @@ func main() {
 	}
 	defer fw.StopWatching()
 
+	// customed by user
+	opts := &utils.Options{}
+
 	svr := echo.NewServer(
 		new(EchoImpl),
 		kitexserver.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: serviceName}),
-		kitexserver.WithSuite(fileserver.NewSuite(key, fw, nil)), // add watcher
+		kitexserver.WithSuite(fileserver.NewSuite(key, fw, opts)), // add watcher
 	)
 	if err := svr.Run(); err != nil {
 		log.Println("server stopped with error:", err)

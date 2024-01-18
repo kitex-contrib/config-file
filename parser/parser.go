@@ -25,9 +25,7 @@ type ConfigParam struct {
 	Type ConfigType
 }
 
-type (
-	ConfigType string
-)
+type ConfigType string
 
 const (
 	JSON ConfigType = "json"
@@ -59,6 +57,12 @@ func (p *Parser) Decode(kind ConfigType, data []byte, config interface{}) error 
 	}
 }
 
-func DefaultConfigParse() ConfigParser {
+func DefaultConfigParser() ConfigParser {
 	return &Parser{}
+}
+
+func DefaultConfigParam() *ConfigParam {
+	return &ConfigParam{
+		Type: JSON,
+	}
 }

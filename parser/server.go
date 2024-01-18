@@ -18,7 +18,7 @@ import "github.com/cloudwego/kitex/pkg/limiter"
 
 // ServerFileConfig is config of a service
 type ServerFileConfig struct {
-	Limit limiter.LimiterConfig `mapstructure:"limit"`
+	Limit limiter.LimiterConfig `mapstructure:"limit" ini:"limit"`
 }
 
 // ServerFileManager is a map of service names to ServerFileConfig

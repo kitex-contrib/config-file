@@ -33,6 +33,7 @@ type ConfigMonitor interface {
 	Stop()
 	SetManager(manager parser.ConfigManager)
 	SetParser(parser parser.ConfigParser)
+	SetParams(params *parser.ConfigParam)
 	ConfigParse(kind parser.ConfigType, data []byte, config interface{}) error
 	RegisterCallback(callback func()) int64
 	DeregisterCallback(uniqueID int64)
@@ -41,6 +42,7 @@ type ConfigMonitor interface {
 type configMonitor struct {
 	// support customise parser
 	parser      parser.ConfigParser     // Parser for the config file
+	params      *parser.ConfigParam     // params for the config file
 	manager     parser.ConfigManager    // Manager for the config file
 	config      interface{}             // config details
 	fileWatcher filewatcher.FileWatcher // local config file watcher
@@ -64,7 +66,8 @@ func NewConfigMonitor(key string, watcher filewatcher.FileWatcher) (ConfigMonito
 		fileWatcher: watcher,
 		key:         key,
 		callbacks:   make(map[int64]func(), 0),
-		parser:      parser.DefaultConfigParse(),
+		parser:      parser.DefaultConfigParser(),
+		params:      parser.DefaultConfigParam(),
 	}, nil
 }
 
@@ -113,6 +116,11 @@ func (c *configMonitor) SetParser(parser parser.ConfigParser) {
 	c.parser = parser
 }
 
+// SetParams set the params for the config file, such as file type
+func (c *configMonitor) SetParams(params *parser.ConfigParam) {
+	c.params = params
+}
+
 // ConfigParse call configMonitor.parser.Decode()
 func (c *configMonitor) ConfigParse(kind parser.ConfigType, data []byte, config interface{}) error {
 	return c.parser.Decode(kind, data, config)
@@ -150,10 +158,8 @@ func (c *configMonitor) DeregisterCallback(key int64) {
 func (c *configMonitor) parseHandler(data []byte) {
 	resp := c.manager
 
-	param := &parser.ConfigParam{
-		Type: parser.JSON,
-	}
-	err := c.parser.Decode(param.Type, data, resp)
+	kind := c.params
+	err := c.parser.Decode(kind.Type, data, resp)
 	if err != nil {
 		klog.Errorf("[local] failed to parse the config file: %v\n", err)
 		return

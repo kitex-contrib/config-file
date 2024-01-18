@@ -81,6 +81,16 @@ func TestSetParser(t *testing.T) {
 	}
 }
 
+func TestSetParams(t *testing.T) {
+	m := mock.NewMockFileWatcher()
+	cm, err := NewConfigMonitor("test", m)
+	if err != nil {
+		t.Errorf("NewConfigMonitor() error = %v", err)
+	}
+
+	cm.SetParams(&parser.ConfigParam{})
+}
+
 func TestRegisterCallback(t *testing.T) {
 	m := mock.NewMockFileWatcher()
 	cm, err := NewConfigMonitor("test", m)

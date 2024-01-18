@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -27,7 +28,8 @@ import (
 	"github.com/cloudwego/kitex/pkg/klog"
 	fileclient "github.com/kitex-contrib/config-file/client"
 	"github.com/kitex-contrib/config-file/filewatcher"
-
+	"github.com/kitex-contrib/config-file/parser"
+	"github.com/kitex-contrib/config-file/utils"
 )
 
 const (
@@ -36,6 +38,13 @@ const (
 	serviceName = "ServiceName"
 	clientName  = "echo"
 )
+
+// Customed by user
+type MyParser struct{}
+
+func (p *MyParser) Decode(kind parser.ConfigType, data []byte, config interface{}) error {
+	return fmt.Errorf("my custom parser: %s parser", kind)
+}
 
 func main() {
 	klog.SetLevel(klog.LevelDebug)
@@ -58,10 +67,13 @@ func main() {
 		os.Exit(1)
 	}()
 
+	// customed by user
+	opts := &utils.Options{}
+
 	client, err := echo.NewClient(
 		serviceName,
 		kitexclient.WithHostPorts("0.0.0.0:8888"),
-		kitexclient.WithSuite(fileclient.NewSuite(serviceName, key, fw, nil)),
+		kitexclient.WithSuite(fileclient.NewSuite(serviceName, key, fw, opts)),
 	)
 	if err != nil {
 		log.Fatal(err)
