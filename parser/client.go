@@ -22,9 +22,9 @@ import (
 
 // ClientFileConfig is config of a client/service pair
 type ClientFileConfig struct {
-	Timeout        map[string]*rpctimeout.RPCTimeout `mapstructure:"timeout"`        // key: method, "*" for default
-	Retry          map[string]*retry.Policy          `mapstructure:"retry"`          // key: method, "*" for default
-	Circuitbreaker map[string]*circuitbreak.CBConfig `mapstructure:"circuitbreaker"` // key: method
+	Timeout        map[string]*rpctimeout.RPCTimeout `mapstructure:"timeout" ini:"timeout"`               // key: method, "*" for default
+	Retry          map[string]*retry.Policy          `mapstructure:"retry" ini:"retry"`                   // key: method, "*" for default
+	Circuitbreaker map[string]*circuitbreak.CBConfig `mapstructure:"circuitbreaker" ini:"circuitbreaker"` // key: method
 }
 
 // ClientFileManager is a map of client/service pairs to ClientFileConfig

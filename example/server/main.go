@@ -28,12 +28,13 @@ import (
 	"github.com/kitex-contrib/config-file/parser"
 	fileserver "github.com/kitex-contrib/config-file/server"
 	"github.com/kitex-contrib/config-file/utils"
+	"gopkg.in/ini.v1"
 )
 
 var _ api.Echo = &EchoImpl{}
 
 const (
-	filepath                      = "kitex_server.json"
+	filepath                      = "kitex_server.ini"
 	key                           = "ServiceName"
 	serviceName                   = "ServiceName"
 	INI         parser.ConfigType = "ini"
@@ -51,8 +52,22 @@ func (s *EchoImpl) Echo(ctx context.Context, req *api.Request) (resp *api.Respon
 // Customed by user
 type MyParser struct{}
 
+// one example for custom parser
 func (p *MyParser) Decode(kind parser.ConfigType, data []byte, config interface{}) error {
-	return fmt.Errorf("my custom parser: %s parser", kind)
+	cfg, err := ini.Load(data)
+	if err != nil {
+		return fmt.Errorf("load config error: %v", err)
+	}
+
+	sfm := make(parser.ServerFileManager, 0)
+
+	sfc := &parser.ServerFileConfig{}
+	cfg.Section(serviceName).MapTo(sfc)
+	sfm[key] = sfc
+
+	v := config.(*parser.ServerFileManager)
+	*v = sfm
+	return err
 }
 
 func main() {
@@ -70,7 +85,14 @@ func main() {
 	defer fw.StopWatching()
 
 	// customed by user
-	opts := &utils.Options{}
+	params := &parser.ConfigParam{
+		Type: INI,
+	}
+
+	opts := &utils.Options{
+		CustomParser: &MyParser{},
+		CustomParams: params,
+	}
 
 	svr := echo.NewServer(
 		new(EchoImpl),

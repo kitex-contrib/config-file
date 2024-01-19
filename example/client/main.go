@@ -25,25 +25,67 @@ import (
 	"github.com/cloudwego/kitex-examples/kitex_gen/api"
 	"github.com/cloudwego/kitex-examples/kitex_gen/api/echo"
 	kitexclient "github.com/cloudwego/kitex/client"
+	"github.com/cloudwego/kitex/pkg/circuitbreak"
 	"github.com/cloudwego/kitex/pkg/klog"
+	"github.com/cloudwego/kitex/pkg/retry"
+	"github.com/cloudwego/kitex/pkg/rpctimeout"
 	fileclient "github.com/kitex-contrib/config-file/client"
 	"github.com/kitex-contrib/config-file/filewatcher"
 	"github.com/kitex-contrib/config-file/parser"
 	"github.com/kitex-contrib/config-file/utils"
+	"gopkg.in/ini.v1"
 )
 
 const (
-	filepath    = "kitex_client.json"
-	key         = "ClientName/ServiceName"
-	serviceName = "ServiceName"
-	clientName  = "echo"
+	filepath                      = "kitex_client.ini"
+	key                           = "ClientName/ServiceName"
+	serviceName                   = "ServiceName"
+	clientName                    = "echo"
+	INI         parser.ConfigType = "ini"
 )
 
 // Customed by user
 type MyParser struct{}
 
+// one example for custom parser
 func (p *MyParser) Decode(kind parser.ConfigType, data []byte, config interface{}) error {
-	return fmt.Errorf("my custom parser: %s parser", kind)
+	cfg, err := ini.Load(data)
+	if err != nil {
+		return fmt.Errorf("load config error: %v", err)
+	}
+
+	cfm := make(parser.ClientFileManager, 0)
+	cfc := &parser.ClientFileConfig{
+		Timeout:        make(map[string]*rpctimeout.RPCTimeout, 0),
+		Retry:          make(map[string]*retry.Policy, 0),
+		Circuitbreaker: make(map[string]*circuitbreak.CBConfig, 0),
+	}
+
+	timeout := &rpctimeout.RPCTimeout{}
+	circ := &circuitbreak.CBConfig{}
+	ret := &retry.Policy{}
+	stop := &retry.StopPolicy{}
+	cb := &retry.CBPolicy{}
+
+	cfg.Section("Timeout").MapTo(timeout)
+	cfg.Section("Circuitbreaker").MapTo(circ)
+	cfg.Section("Retry").MapTo(ret)
+	cfg.Section("StopPolicy").MapTo(stop)
+	cfg.Section("CBPolicy").MapTo(cb)
+	stop.CBPolicy = *cb
+	ret.FailurePolicy = &retry.FailurePolicy{
+		StopPolicy: *stop,
+	}
+
+	cfc.Timeout[clientName] = timeout
+	cfc.Circuitbreaker[clientName] = circ
+	cfc.Retry[clientName] = ret
+
+	cfm[key] = cfc
+
+	v := config.(*parser.ClientFileManager)
+	*v = cfm
+	return err
 }
 
 func main() {
@@ -68,7 +110,13 @@ func main() {
 	}()
 
 	// customed by user
-	opts := &utils.Options{}
+	params := &parser.ConfigParam{
+		Type: INI,
+	}
+	opts := &utils.Options{
+		CustomParser: &MyParser{},
+		CustomParams: params,
+	}
 
 	client, err := echo.NewClient(
 		serviceName,
