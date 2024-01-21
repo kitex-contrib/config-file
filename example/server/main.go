@@ -16,7 +16,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"log"
 
 	"github.com/cloudwego/kitex-examples/kitex_gen/api"
@@ -28,16 +28,14 @@ import (
 	"github.com/kitex-contrib/config-file/parser"
 	fileserver "github.com/kitex-contrib/config-file/server"
 	"github.com/kitex-contrib/config-file/utils"
-	"gopkg.in/ini.v1"
 )
 
 var _ api.Echo = &EchoImpl{}
 
 const (
-	filepath                      = "kitex_server.ini"
-	key                           = "ServiceName"
-	serviceName                   = "ServiceName"
-	INI         parser.ConfigType = "ini"
+	filepath    = "kitex_server.json"
+	key         = "ServiceName"
+	serviceName = "ServiceName"
 )
 
 // EchoImpl implements the last service interface defined in the IDL.
@@ -55,20 +53,7 @@ type MyParser struct{}
 // one example for custom parser
 // if the type of client config is json or yaml,just using default parser
 func (p *MyParser) Decode(kind parser.ConfigType, data []byte, config interface{}) error {
-	cfg, err := ini.Load(data)
-	if err != nil {
-		return fmt.Errorf("load config error: %v", err)
-	}
-
-	sfm := make(parser.ServerFileManager, 0)
-
-	sfc := &parser.ServerFileConfig{}
-	cfg.MapTo(sfc)
-	sfm[key] = sfc
-
-	v := config.(*parser.ServerFileManager)
-	*v = sfm
-	return err
+	return json.Unmarshal(data, config)
 }
 
 func main() {
@@ -86,10 +71,7 @@ func main() {
 	defer fw.StopWatching()
 
 	// customed by user
-	params := &parser.ConfigParam{
-		Type: INI,
-	}
-
+	params := &parser.ConfigParam{}
 	opts := &utils.Options{
 		CustomParser: &MyParser{},
 		CustomParams: params,
