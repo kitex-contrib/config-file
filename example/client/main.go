@@ -1,4 +1,4 @@
-// Copyright 2023 CloudWeGo Authors
+// Copyright 2024 CloudWeGo Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ const (
 type MyParser struct{}
 
 // one example for custom parser
+// if the type of client config is json or yaml,just using default parser
 func (p *MyParser) Decode(kind parser.ConfigType, data []byte, config interface{}) error {
 	cfg, err := ini.Load(data)
 	if err != nil {
@@ -67,11 +68,11 @@ func (p *MyParser) Decode(kind parser.ConfigType, data []byte, config interface{
 	stop := &retry.StopPolicy{}
 	cb := &retry.CBPolicy{}
 
-	cfg.Section("Timeout").MapTo(timeout)
-	cfg.Section("Circuitbreaker").MapTo(circ)
-	cfg.Section("Retry").MapTo(ret)
-	cfg.Section("StopPolicy").MapTo(stop)
-	cfg.Section("CBPolicy").MapTo(cb)
+	cfg.Section(key).MapTo(timeout)
+	cfg.Section("ClientName/ServiceName.Circuitbreaker.Echo").MapTo(circ)
+	cfg.Section("ClientName/ServiceName.Retry.*").MapTo(ret)
+	cfg.Section("ClientName/ServiceName.Retry.*.FailurePolicy.StopPolicy").MapTo(stop)
+	cfg.Section("ClientName/ServiceName.Retry.*.CBPolicy").MapTo(cb)
 	stop.CBPolicy = *cb
 	ret.FailurePolicy = &retry.FailurePolicy{
 		StopPolicy: *stop,

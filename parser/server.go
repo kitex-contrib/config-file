@@ -1,4 +1,4 @@
-// Copyright 2023 CloudWeGo Authors
+// Copyright 2024 CloudWeGo Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ import "github.com/cloudwego/kitex/pkg/limiter"
 
 // ServerFileConfig is config of a service
 type ServerFileConfig struct {
-	Limit limiter.LimiterConfig `mapstructure:"limit" ini:"ServiceName"`
+	Limit limiter.LimiterConfig `mapstructure:"limit" ini:"ServiceName.Limit"`
 }
 
 // ServerFileManager is a map of service names to ServerFileConfig
