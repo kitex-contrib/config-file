@@ -47,11 +47,11 @@ func (s *EchoImpl) Echo(ctx context.Context, req *api.Request) (resp *api.Respon
 	return &api.Response{Message: req.Message}, nil
 }
 
-// Customed by user
+// customed by user
 type MyParser struct{}
 
 // one example for custom parser
-// if the type of client config is json or yaml,just using default parser
+// if the type of server config is json or yaml,just using default parser
 func (p *MyParser) Decode(kind parser.ConfigType, data []byte, config interface{}) error {
 	return json.Unmarshal(data, config)
 }

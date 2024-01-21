@@ -39,7 +39,7 @@ const (
 	clientName  = "echo"
 )
 
-// Customed by user
+// customed by user
 type MyParser struct{}
 
 // one example for custom parser
