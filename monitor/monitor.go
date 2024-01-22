@@ -1,4 +1,4 @@
-// Copyright 2023 CloudWeGo Authors
+// Copyright 2024 CloudWeGo Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,11 +32,17 @@ type ConfigMonitor interface {
 	WatcherID() int64
 	Stop()
 	SetManager(manager parser.ConfigManager)
+	SetParser(parser parser.ConfigParser)
+	SetParams(params *parser.ConfigParam)
+	ConfigParse(kind parser.ConfigType, data []byte, config interface{}) error
 	RegisterCallback(callback func()) int64
 	DeregisterCallback(uniqueID int64)
 }
 
 type configMonitor struct {
+	// support customise parser
+	parser      parser.ConfigParser     // Parser for the config file
+	params      *parser.ConfigParam     // params for the config file
 	manager     parser.ConfigManager    // Manager for the config file
 	config      interface{}             // config details
 	fileWatcher filewatcher.FileWatcher // local config file watcher
@@ -60,6 +66,8 @@ func NewConfigMonitor(key string, watcher filewatcher.FileWatcher) (ConfigMonito
 		fileWatcher: watcher,
 		key:         key,
 		callbacks:   make(map[int64]func(), 0),
+		parser:      parser.DefaultConfigParser(),
+		params:      parser.DefaultConfigParam(),
 	}, nil
 }
 
@@ -103,6 +111,21 @@ func (c *configMonitor) Stop() {
 // SetManager set the manager for the config file
 func (c *configMonitor) SetManager(manager parser.ConfigManager) { c.manager = manager }
 
+// SetParser set the parser for the config file
+func (c *configMonitor) SetParser(parser parser.ConfigParser) {
+	c.parser = parser
+}
+
+// SetParams set the params for the config file, such as file type
+func (c *configMonitor) SetParams(params *parser.ConfigParam) {
+	c.params = params
+}
+
+// ConfigParse call configMonitor.parser.Decode()
+func (c *configMonitor) ConfigParse(kind parser.ConfigType, data []byte, config interface{}) error {
+	return c.parser.Decode(kind, data, config)
+}
+
 // RegisterCallback add callback function, it will be called when file changed, return key for deregister
 func (c *configMonitor) RegisterCallback(callback func()) int64 {
 	c.lock.Lock()
@@ -134,7 +157,9 @@ func (c *configMonitor) DeregisterCallback(key int64) {
 // parseHandler parse and invoke each function in the callbacks array
 func (c *configMonitor) parseHandler(data []byte) {
 	resp := c.manager
-	err := parser.Decode(data, resp)
+
+	kind := c.params
+	err := c.parser.Decode(kind.Type, data, resp)
 	if err != nil {
 		klog.Errorf("[local] failed to parse the config file: %v\n", err)
 		return

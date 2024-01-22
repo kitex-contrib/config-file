@@ -21,6 +21,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 
 	"github.com/cloudwego/kitex-examples/kitex_gen/api"
@@ -29,7 +30,17 @@ import (
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	kitexserver "github.com/cloudwego/kitex/server"
 	"github.com/kitex-contrib/config-file/filewatcher"
+	"github.com/kitex-contrib/config-file/parser"
 	fileserver "github.com/kitex-contrib/config-file/server"
+	"github.com/kitex-contrib/config-file/utils"
+)
+
+var _ api.Echo = &EchoImpl{}
+
+const (
+	filepath    = "kitex_server.json"
+	key         = "ServiceName"
+	serviceName = "ServiceName"
 )
 
 var _ api.Echo = &EchoImpl{}
@@ -49,6 +60,15 @@ func (s *EchoImpl) Echo(ctx context.Context, req *api.Request) (resp *api.Respon
 	return &api.Response{Message: req.Message}, nil
 }
 
+// customed by user
+type MyParser struct{}
+
+// one example for custom parser
+// if the type of server config is json or yaml,just using default parser
+func (p *MyParser) Decode(kind parser.ConfigType, data []byte, config interface{}) error {
+	return json.Unmarshal(data, config)
+}
+
 func main() {
 	klog.SetLevel(klog.LevelDebug)
 
@@ -63,10 +83,17 @@ func main() {
 	}
 	defer fw.StopWatching()
 
+	// customed by user
+	params := &parser.ConfigParam{}
+	opts := &utils.Options{
+		CustomParser: &MyParser{},
+		CustomParams: params,
+	}
+
 	svr := echo.NewServer(
 		new(EchoImpl),
-		server.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: serviceName}),
-		server.WithSuite(fileserver.NewSuite(key, fw)), // add watcher
+		kitexserver.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: serviceName}),
+		kitexserver.WithSuite(fileserver.NewSuite(key, fw, opts)), // add watcher
 	)
 	if err := svr.Run(); err != nil {
 		log.Println("server stopped with error:", err)
@@ -83,6 +110,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"os"
 	"os/signal"
@@ -94,6 +122,8 @@ import (
 	"github.com/cloudwego/kitex/pkg/klog"
 	fileclient "github.com/kitex-contrib/config-file/client"
 	"github.com/kitex-contrib/config-file/filewatcher"
+	"github.com/kitex-contrib/config-file/parser"
+	"github.com/kitex-contrib/config-file/utils"
 )
 
 const (
@@ -102,6 +132,15 @@ const (
 	serviceName = "ServiceName"
 	clientName  = "ClientName"
 )
+
+// customed by user
+type MyParser struct{}
+
+// one example for custom parser
+// if the type of client config is json or yaml,just using default parser
+func (p *MyParser) Decode(kind parser.ConfigType, data []byte, config interface{}) error {
+	return json.Unmarshal(data, config)
+}
 
 func main() {
 	klog.SetLevel(klog.LevelDebug)
@@ -124,10 +163,17 @@ func main() {
 		os.Exit(1)
 	}()
 
+	// customed by user
+	params := &parser.ConfigParam{}
+	opts := &utils.Options{
+		CustomParser: &MyParser{},
+		CustomParams: params,
+	}
+
 	client, err := echo.NewClient(
 		serviceName,
 		kitexclient.WithHostPorts("0.0.0.0:8888"),
-		kitexclient.WithSuite(fileclient.NewSuite(serviceName, key, fw)),
+		kitexclient.WithSuite(fileclient.NewSuite(serviceName, key, fw, opts)),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -144,8 +190,10 @@ func main() {
 		time.Sleep(time.Second * 10)
 	}
 }
-
 ```
+
+#### File配置格式
+配置格式默认支持`json`和`yaml`，可以通过实现`ConfigParser`接口实现自定义解析器，并在`NewSuite`的时候通过`utils.Options`传入自定义解析器以及自定义参数
 
 #### 治理策略
 > 服务名称为 ServiceName，客户端名称为 ClientName

@@ -1,4 +1,4 @@
-// Copyright 2023 CloudWeGo Authors
+// Copyright 2024 CloudWeGo Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,7 +18,14 @@ import (
 	"errors"
 	"io/fs"
 	"os"
+
+	"github.com/kitex-contrib/config-file/parser"
 )
+
+type Options struct {
+	CustomParser parser.ConfigParser
+	CustomParams *parser.ConfigParam
+}
 
 // PathExists check whether the file or directory exists
 func PathExists(path string) (bool, error) {

@@ -1,4 +1,4 @@
-// Copyright 2023 CloudWeGo Authors
+// Copyright 2024 CloudWeGo Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"os"
 	"os/signal"
@@ -27,6 +28,8 @@ import (
 	"github.com/cloudwego/kitex/pkg/klog"
 	fileclient "github.com/kitex-contrib/config-file/client"
 	"github.com/kitex-contrib/config-file/filewatcher"
+	"github.com/kitex-contrib/config-file/parser"
+	"github.com/kitex-contrib/config-file/utils"
 )
 
 const (
@@ -35,6 +38,15 @@ const (
 	serviceName = "ServiceName"
 	clientName  = "echo"
 )
+
+// customed by user
+type MyParser struct{}
+
+// one example for custom parser
+// if the type of client config is json or yaml,just using default parser
+func (p *MyParser) Decode(kind parser.ConfigType, data []byte, config interface{}) error {
+	return json.Unmarshal(data, config)
+}
 
 func main() {
 	klog.SetLevel(klog.LevelDebug)
@@ -57,10 +69,17 @@ func main() {
 		os.Exit(1)
 	}()
 
+	// customed by user
+	params := &parser.ConfigParam{}
+	opts := &utils.Options{
+		CustomParser: &MyParser{},
+		CustomParams: params,
+	}
+
 	client, err := echo.NewClient(
 		serviceName,
 		kitexclient.WithHostPorts("0.0.0.0:8888"),
-		kitexclient.WithSuite(fileclient.NewSuite(serviceName, key, fw)),
+		kitexclient.WithSuite(fileclient.NewSuite(serviceName, key, fw, opts)),
 	)
 	if err != nil {
 		log.Fatal(err)

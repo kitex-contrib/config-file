@@ -3,6 +3,7 @@ module github.com/kitex-contrib/config-file
 go 1.19
 
 require (
+	github.com/bytedance/sonic v1.10.2
 	github.com/cloudwego/kitex v0.8.0
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/stretchr/testify v1.8.4
@@ -12,7 +13,6 @@ require (
 require (
 	github.com/apache/thrift v0.13.0 // indirect
 	github.com/bytedance/gopkg v0.0.0-20230728082804-614d0af6619b // indirect
-	github.com/bytedance/sonic v1.10.2 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect
 	github.com/chenzhuoyu/iasm v0.9.1 // indirect
 	github.com/choleraehyq/pid v0.0.17 // indirect

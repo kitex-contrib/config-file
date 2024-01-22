@@ -1,4 +1,4 @@
-// Copyright 2023 CloudWeGo Authors
+// Copyright 2024 CloudWeGo Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import (
 	"github.com/kitex-contrib/config-file/filewatcher"
 	"github.com/kitex-contrib/config-file/monitor"
 	"github.com/kitex-contrib/config-file/parser"
+	"github.com/kitex-contrib/config-file/utils"
 )
 
 type FileConfigClientSuite struct {
@@ -27,10 +28,19 @@ type FileConfigClientSuite struct {
 }
 
 // NewSuite service is the destination service.
-func NewSuite(service, key string, watcher filewatcher.FileWatcher) *FileConfigClientSuite {
+func NewSuite(service, key string, watcher filewatcher.FileWatcher, opts *utils.Options) *FileConfigClientSuite {
 	cm, err := monitor.NewConfigMonitor(key, watcher)
 	if err != nil {
 		panic(err)
+	}
+
+	// use custom parser
+	if opts.CustomParser != nil {
+		cm.SetParser(opts.CustomParser)
+	}
+
+	if opts.CustomParams != nil {
+		cm.SetParams(opts.CustomParams)
 	}
 
 	return &FileConfigClientSuite{

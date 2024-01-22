@@ -1,4 +1,4 @@
-// Copyright 2023 CloudWeGo Authors
+// Copyright 2024 CloudWeGo Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -61,6 +61,34 @@ func TestSetManager(t *testing.T) {
 		t.Errorf("NewConfigMonitor() error = %v", err)
 	}
 	cm.SetManager(&parser.ServerFileManager{})
+}
+
+func TestSetParser(t *testing.T) {
+	m := mock.NewMockFileWatcher()
+	cm, err := NewConfigMonitor("test", m)
+	if err != nil {
+		t.Errorf("NewConfigMonitor() error = %v", err)
+	}
+	cm.SetParser(&parser.Parser{})
+
+	// use json format test ConfigParse
+	kind := parser.JSON
+	jsonData := []byte(`{"key": "value"}`)
+	var config struct{}
+	err = cm.ConfigParse(kind, jsonData, &config)
+	if err != nil {
+		t.Errorf("ConfigParse() error = %v", err)
+	}
+}
+
+func TestSetParams(t *testing.T) {
+	m := mock.NewMockFileWatcher()
+	cm, err := NewConfigMonitor("test", m)
+	if err != nil {
+		t.Errorf("NewConfigMonitor() error = %v", err)
+	}
+
+	cm.SetParams(&parser.ConfigParam{})
 }
 
 func TestRegisterCallback(t *testing.T) {

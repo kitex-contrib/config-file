@@ -6,6 +6,7 @@ require (
 	github.com/cloudwego/kitex v0.8.0
 	github.com/cloudwego/kitex-examples v0.2.3
 	github.com/kitex-contrib/config-file v1.0.0
+	gopkg.in/ini.v1 v1.67.0
 )
 
 replace github.com/kitex-contrib/config-file => ../.

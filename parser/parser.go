@@ -1,4 +1,4 @@
-// Copyright 2023 CloudWeGo Authors
+// Copyright 2024 CloudWeGo Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,14 +15,54 @@
 package parser
 
 import (
+	"fmt"
+
+	"github.com/bytedance/sonic"
 	"sigs.k8s.io/yaml"
 )
+
+type ConfigParam struct {
+	Type ConfigType
+}
+
+type ConfigType string
+
+const (
+	JSON ConfigType = "json"
+	YAML ConfigType = "yaml"
+)
+
+// ConfigParser the parser for config file.
+type ConfigParser interface {
+	Decode(kind ConfigType, data []byte, config interface{}) error
+}
+
+type Parser struct{}
 
 type ConfigManager interface {
 	GetConfig(key string) interface{}
 }
 
-// Decode parse the config file
-func Decode(data []byte, resp interface{}) error {
-	return yaml.Unmarshal(data, resp)
+var _ ConfigParser = &Parser{}
+
+// Decode decodes the data to struct in specified format.
+func (p *Parser) Decode(kind ConfigType, data []byte, config interface{}) error {
+	switch kind {
+	case JSON:
+		return sonic.Unmarshal(data, config)
+	case YAML:
+		return yaml.Unmarshal(data, config)
+	default:
+		return fmt.Errorf("unsupported config data type %s", kind)
+	}
+}
+
+func DefaultConfigParser() ConfigParser {
+	return &Parser{}
+}
+
+func DefaultConfigParam() *ConfigParam {
+	return &ConfigParam{
+		Type: JSON,
+	}
 }

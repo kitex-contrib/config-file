@@ -1,4 +1,4 @@
-// Copyright 2023 CloudWeGo Authors
+// Copyright 2024 CloudWeGo Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 
 	"github.com/cloudwego/kitex-examples/kitex_gen/api"
@@ -24,7 +25,9 @@ import (
 	"github.com/cloudwego/kitex/pkg/rpcinfo"
 	kitexserver "github.com/cloudwego/kitex/server"
 	"github.com/kitex-contrib/config-file/filewatcher"
+	"github.com/kitex-contrib/config-file/parser"
 	fileserver "github.com/kitex-contrib/config-file/server"
+	"github.com/kitex-contrib/config-file/utils"
 )
 
 var _ api.Echo = &EchoImpl{}
@@ -44,6 +47,15 @@ func (s *EchoImpl) Echo(ctx context.Context, req *api.Request) (resp *api.Respon
 	return &api.Response{Message: req.Message}, nil
 }
 
+// customed by user
+type MyParser struct{}
+
+// one example for custom parser
+// if the type of server config is json or yaml,just using default parser
+func (p *MyParser) Decode(kind parser.ConfigType, data []byte, config interface{}) error {
+	return json.Unmarshal(data, config)
+}
+
 func main() {
 	klog.SetLevel(klog.LevelDebug)
 
@@ -58,10 +70,17 @@ func main() {
 	}
 	defer fw.StopWatching()
 
+	// customed by user
+	params := &parser.ConfigParam{}
+	opts := &utils.Options{
+		CustomParser: &MyParser{},
+		CustomParams: params,
+	}
+
 	svr := echo.NewServer(
 		new(EchoImpl),
 		kitexserver.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: serviceName}),
-		kitexserver.WithSuite(fileserver.NewSuite(key, fw)), // add watcher
+		kitexserver.WithSuite(fileserver.NewSuite(key, fw, opts)), // add watcher
 	)
 	if err := svr.Run(); err != nil {
 		log.Println("server stopped with error:", err)
