@@ -33,8 +33,6 @@ type ConfigMonitor interface {
 	WatcherID() int64
 	Stop()
 	SetManager(manager parser.ConfigManager)
-	SetParser(parser parser.ConfigParser)
-	SetParams(params *parser.ConfigParam)
 	ConfigParse(kind parser.ConfigType, data []byte, config interface{}) error
 	RegisterCallback(callback func()) int64
 	DeregisterCallback(uniqueID int64)
@@ -111,16 +109,6 @@ func (c *configMonitor) Stop() {
 
 // SetManager set the manager for the config file
 func (c *configMonitor) SetManager(manager parser.ConfigManager) { c.manager = manager }
-
-// SetParser set the parser for the config file
-func (c *configMonitor) SetParser(parser parser.ConfigParser) {
-	c.parser = parser
-}
-
-// SetParams set the params for the config file, such as file type
-func (c *configMonitor) SetParams(params *parser.ConfigParam) {
-	c.params = params
-}
 
 // ConfigParse call configMonitor.parser.Decode()
 func (c *configMonitor) ConfigParse(kind parser.ConfigType, data []byte, config interface{}) error {

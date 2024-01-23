@@ -15,6 +15,8 @@
 package client
 
 import (
+	"fmt"
+
 	kitexclient "github.com/cloudwego/kitex/client"
 	"github.com/kitex-contrib/config-file/filewatcher"
 	"github.com/kitex-contrib/config-file/monitor"
@@ -37,6 +39,7 @@ func NewSuite(service, key string, watcher filewatcher.FileWatcher, opts ...util
 		option(parserOption)
 	}
 
+	fmt.Printf("config parser: %v %T\n", parserOption.Params, parserOption.Parser)
 	cm, err := monitor.NewConfigMonitor(key, watcher, parserOption)
 	if err != nil {
 		panic(err)
