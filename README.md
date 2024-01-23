@@ -191,9 +191,9 @@ func customParser(parser parser.ConfigParser) utils.Options {
 	}
 }
 
-func customConfigParams(pararm *parser.ConfigParam) utils.Options {
+func customConfigParams(param *parser.ConfigParam) utils.Options {
 	return func(o *utils.Option) {
-		o.Params = pararm
+		o.Params = param
 	}
 }
 ```
