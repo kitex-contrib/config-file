@@ -28,19 +28,18 @@ type FileConfigClientSuite struct {
 }
 
 // NewSuite service is the destination service.
-func NewSuite(service, key string, watcher filewatcher.FileWatcher, opts *utils.Options) *FileConfigClientSuite {
-	cm, err := monitor.NewConfigMonitor(key, watcher)
+func NewSuite(service, key string, watcher filewatcher.FileWatcher, opts ...utils.Options) *FileConfigClientSuite {
+	parserOption := &utils.Option{
+		Parser: parser.DefaultConfigParser(),
+		Params: parser.DefaultConfigParam(),
+	}
+	for _, option := range opts {
+		option(parserOption)
+	}
+
+	cm, err := monitor.NewConfigMonitor(key, watcher, parserOption)
 	if err != nil {
 		panic(err)
-	}
-
-	// use custom parser
-	if opts.CustomParser != nil {
-		cm.SetParser(opts.CustomParser)
-	}
-
-	if opts.CustomParams != nil {
-		cm.SetParams(opts.CustomParams)
 	}
 
 	return &FileConfigClientSuite{

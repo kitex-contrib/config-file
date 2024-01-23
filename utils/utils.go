@@ -22,10 +22,12 @@ import (
 	"github.com/kitex-contrib/config-file/parser"
 )
 
-type Options struct {
-	CustomParser parser.ConfigParser
-	CustomParams *parser.ConfigParam
+type Option struct {
+	Parser parser.ConfigParser
+	Params *parser.ConfigParam
 }
+
+type Options func(o *Option)
 
 // PathExists check whether the file or directory exists
 func PathExists(path string) (bool, error) {

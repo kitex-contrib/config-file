@@ -27,7 +27,6 @@ import (
 	"github.com/kitex-contrib/config-file/filewatcher"
 	"github.com/kitex-contrib/config-file/parser"
 	fileserver "github.com/kitex-contrib/config-file/server"
-	"github.com/kitex-contrib/config-file/utils"
 )
 
 var _ api.Echo = &EchoImpl{}
@@ -70,17 +69,10 @@ func main() {
 	}
 	defer fw.StopWatching()
 
-	// customed by user
-	params := &parser.ConfigParam{}
-	opts := &utils.Options{
-		CustomParser: &MyParser{},
-		CustomParams: params,
-	}
-
 	svr := echo.NewServer(
 		new(EchoImpl),
 		kitexserver.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: serviceName}),
-		kitexserver.WithSuite(fileserver.NewSuite(key, fw, opts)), // add watcher
+		kitexserver.WithSuite(fileserver.NewSuite(key, fw)), // add watcher
 	)
 	if err := svr.Run(); err != nil {
 		log.Println("server stopped with error:", err)

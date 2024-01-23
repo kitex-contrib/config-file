@@ -22,6 +22,7 @@ import (
 	"github.com/cloudwego/kitex/pkg/klog"
 	"github.com/kitex-contrib/config-file/filewatcher"
 	"github.com/kitex-contrib/config-file/parser"
+	"github.com/kitex-contrib/config-file/utils"
 )
 
 type ConfigMonitor interface {
@@ -54,7 +55,7 @@ type configMonitor struct {
 }
 
 // NewConfigMonitor init a monitor for the config file
-func NewConfigMonitor(key string, watcher filewatcher.FileWatcher) (ConfigMonitor, error) {
+func NewConfigMonitor(key string, watcher filewatcher.FileWatcher, opt *utils.Option) (ConfigMonitor, error) {
 	if key == "" {
 		return nil, errors.New("empty config key")
 	}
@@ -66,8 +67,8 @@ func NewConfigMonitor(key string, watcher filewatcher.FileWatcher) (ConfigMonito
 		fileWatcher: watcher,
 		key:         key,
 		callbacks:   make(map[int64]func(), 0),
-		parser:      parser.DefaultConfigParser(),
-		params:      parser.DefaultConfigParam(),
+		parser:      opt.Parser,
+		params:      opt.Params,
 	}, nil
 }
 
