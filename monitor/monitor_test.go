@@ -20,6 +20,7 @@ import (
 	"github.com/kitex-contrib/config-file/filewatcher"
 	"github.com/kitex-contrib/config-file/mock"
 	"github.com/kitex-contrib/config-file/parser"
+	"github.com/kitex-contrib/config-file/utils"
 )
 
 const (
@@ -28,24 +29,39 @@ const (
 
 func TestNewConfigMonitor(t *testing.T) {
 	m := mock.NewMockFileWatcher()
-	if _, err := NewConfigMonitor("test", m); err != nil {
+	opt := &utils.Option{
+		Parser: parser.DefaultConfigParser(),
+		Params: parser.DefaultConfigParam(),
+	}
+
+	if _, err := NewConfigMonitor("test", m, opt); err != nil {
 		t.Errorf("NewConfigMonitor() error = %v", err)
 	}
 }
 
 func TestNewConfigMonitorFailed(t *testing.T) {
 	m := mock.NewMockFileWatcher()
-	if _, err := NewConfigMonitor("", m); err == nil {
+	opt := &utils.Option{
+		Parser: parser.DefaultConfigParser(),
+		Params: parser.DefaultConfigParam(),
+	}
+
+	if _, err := NewConfigMonitor("", m, opt); err == nil {
 		t.Errorf("NewConfigMonitor() error = %v", err)
 	}
-	if _, err := NewConfigMonitor("test", nil); err == nil {
+	if _, err := NewConfigMonitor("test", nil, nil); err == nil {
 		t.Errorf("NewConfigMonitor() error = %v", err)
 	}
 }
 
 func TestKey(t *testing.T) {
 	m := mock.NewMockFileWatcher()
-	cm, err := NewConfigMonitor("test", m)
+	opt := &utils.Option{
+		Parser: parser.DefaultConfigParser(),
+		Params: parser.DefaultConfigParam(),
+	}
+
+	cm, err := NewConfigMonitor("test", m, opt)
 	if err != nil {
 		t.Errorf("NewConfigMonitor() error = %v", err)
 	}
@@ -56,7 +72,12 @@ func TestKey(t *testing.T) {
 
 func TestSetManager(t *testing.T) {
 	m := mock.NewMockFileWatcher()
-	cm, err := NewConfigMonitor("test", m)
+	opt := &utils.Option{
+		Parser: parser.DefaultConfigParser(),
+		Params: parser.DefaultConfigParam(),
+	}
+
+	cm, err := NewConfigMonitor("test", m, opt)
 	if err != nil {
 		t.Errorf("NewConfigMonitor() error = %v", err)
 	}
@@ -65,7 +86,12 @@ func TestSetManager(t *testing.T) {
 
 func TestSetParser(t *testing.T) {
 	m := mock.NewMockFileWatcher()
-	cm, err := NewConfigMonitor("test", m)
+	opt := &utils.Option{
+		Parser: parser.DefaultConfigParser(),
+		Params: parser.DefaultConfigParam(),
+	}
+
+	cm, err := NewConfigMonitor("test", m, opt)
 	if err != nil {
 		t.Errorf("NewConfigMonitor() error = %v", err)
 	}
@@ -83,7 +109,12 @@ func TestSetParser(t *testing.T) {
 
 func TestSetParams(t *testing.T) {
 	m := mock.NewMockFileWatcher()
-	cm, err := NewConfigMonitor("test", m)
+	opt := &utils.Option{
+		Parser: parser.DefaultConfigParser(),
+		Params: parser.DefaultConfigParam(),
+	}
+
+	cm, err := NewConfigMonitor("test", m, opt)
 	if err != nil {
 		t.Errorf("NewConfigMonitor() error = %v", err)
 	}
@@ -93,7 +124,12 @@ func TestSetParams(t *testing.T) {
 
 func TestRegisterCallback(t *testing.T) {
 	m := mock.NewMockFileWatcher()
-	cm, err := NewConfigMonitor("test", m)
+	opt := &utils.Option{
+		Parser: parser.DefaultConfigParser(),
+		Params: parser.DefaultConfigParam(),
+	}
+
+	cm, err := NewConfigMonitor("test", m, opt)
 	if err != nil {
 		t.Errorf("NewConfigMonitor() error = %v", err)
 	}
@@ -102,7 +138,12 @@ func TestRegisterCallback(t *testing.T) {
 
 func TestDeregisterCallback(t *testing.T) {
 	m := mock.NewMockFileWatcher()
-	cm, err := NewConfigMonitor("test", m)
+	opt := &utils.Option{
+		Parser: parser.DefaultConfigParser(),
+		Params: parser.DefaultConfigParam(),
+	}
+
+	cm, err := NewConfigMonitor("test", m, opt)
 	if err != nil {
 		t.Errorf("NewConfigMonitor() error = %v", err)
 	}
@@ -111,7 +152,12 @@ func TestDeregisterCallback(t *testing.T) {
 
 func TestStartFailed(t *testing.T) {
 	m := mock.NewMockFileWatcher()
-	cm, err := NewConfigMonitor("test", m)
+	opt := &utils.Option{
+		Parser: parser.DefaultConfigParser(),
+		Params: parser.DefaultConfigParam(),
+	}
+
+	cm, err := NewConfigMonitor("test", m, opt)
 	if err != nil {
 		t.Errorf("NewConfigMonitor() error = %v", err)
 	}
@@ -122,7 +168,12 @@ func TestStartFailed(t *testing.T) {
 
 func TestStartSuccess(t *testing.T) {
 	m := mock.NewMockFileWatcher()
-	cm, err := NewConfigMonitor("test", m)
+	opt := &utils.Option{
+		Parser: parser.DefaultConfigParser(),
+		Params: parser.DefaultConfigParam(),
+	}
+
+	cm, err := NewConfigMonitor("test", m, opt)
 	if err != nil {
 		t.Errorf("NewConfigMonitor() error = %v", err)
 	}
@@ -134,7 +185,12 @@ func TestStartSuccess(t *testing.T) {
 
 func TestStop(t *testing.T) {
 	m := mock.NewMockFileWatcher()
-	cm, err := NewConfigMonitor("test", m)
+	opt := &utils.Option{
+		Parser: parser.DefaultConfigParser(),
+		Params: parser.DefaultConfigParam(),
+	}
+
+	cm, err := NewConfigMonitor("test", m, opt)
 	if err != nil {
 		t.Errorf("NewConfigMonitor() error = %v", err)
 	}
@@ -155,7 +211,12 @@ func TestEntireProcessWithSameKey(t *testing.T) {
 
 func createConfigManager(fw filewatcher.FileWatcher, key string, t *testing.T) ConfigMonitor {
 	// create a config monitor object
-	cm, err := NewConfigMonitor(key, fw)
+	opt := &utils.Option{
+		Parser: parser.DefaultConfigParser(),
+		Params: parser.DefaultConfigParam(),
+	}
+
+	cm, err := NewConfigMonitor("test", fw, opt)
 	if err != nil {
 		t.Errorf("NewConfigMonitor() error = %v", err)
 	}
