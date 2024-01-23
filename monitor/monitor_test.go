@@ -84,7 +84,7 @@ func TestSetManager(t *testing.T) {
 	cm.SetManager(&parser.ServerFileManager{})
 }
 
-func TestSetParser(t *testing.T) {
+func TestConfigParse(t *testing.T) {
 	m := mock.NewMockFileWatcher()
 	opt := &utils.Option{
 		Parser: parser.DefaultConfigParser(),
@@ -95,8 +95,6 @@ func TestSetParser(t *testing.T) {
 	if err != nil {
 		t.Errorf("NewConfigMonitor() error = %v", err)
 	}
-	cm.SetParser(&parser.Parser{})
-
 	// use json format test ConfigParse
 	kind := parser.JSON
 	jsonData := []byte(`{"key": "value"}`)
@@ -105,21 +103,6 @@ func TestSetParser(t *testing.T) {
 	if err != nil {
 		t.Errorf("ConfigParse() error = %v", err)
 	}
-}
-
-func TestSetParams(t *testing.T) {
-	m := mock.NewMockFileWatcher()
-	opt := &utils.Option{
-		Parser: parser.DefaultConfigParser(),
-		Params: parser.DefaultConfigParam(),
-	}
-
-	cm, err := NewConfigMonitor("test", m, opt)
-	if err != nil {
-		t.Errorf("NewConfigMonitor() error = %v", err)
-	}
-
-	cm.SetParams(&parser.ConfigParam{})
 }
 
 func TestRegisterCallback(t *testing.T) {
