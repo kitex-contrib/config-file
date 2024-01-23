@@ -32,15 +32,6 @@ import (
 	"github.com/kitex-contrib/config-file/filewatcher"
 	"github.com/kitex-contrib/config-file/parser"
 	fileserver "github.com/kitex-contrib/config-file/server"
-	"github.com/kitex-contrib/config-file/utils"
-)
-
-var _ api.Echo = &EchoImpl{}
-
-const (
-	filepath    = "kitex_server.json"
-	key         = "ServiceName"
-	serviceName = "ServiceName"
 )
 
 var _ api.Echo = &EchoImpl{}
@@ -83,17 +74,10 @@ func main() {
 	}
 	defer fw.StopWatching()
 
-	// customed by user
-	params := &parser.ConfigParam{}
-	opts := &utils.Options{
-		CustomParser: &MyParser{},
-		CustomParams: params,
-	}
-
 	svr := echo.NewServer(
 		new(EchoImpl),
 		kitexserver.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: serviceName}),
-		kitexserver.WithSuite(fileserver.NewSuite(key, fw, opts)), // add watcher
+		kitexserver.WithSuite(fileserver.NewSuite(key, fw)), // add watcher
 	)
 	if err := svr.Run(); err != nil {
 		log.Println("server stopped with error:", err)
@@ -123,7 +107,6 @@ import (
 	fileclient "github.com/kitex-contrib/config-file/client"
 	"github.com/kitex-contrib/config-file/filewatcher"
 	"github.com/kitex-contrib/config-file/parser"
-	"github.com/kitex-contrib/config-file/utils"
 )
 
 const (
@@ -163,17 +146,10 @@ func main() {
 		os.Exit(1)
 	}()
 
-	// customed by user
-	params := &parser.ConfigParam{}
-	opts := &utils.Options{
-		CustomParser: &MyParser{},
-		CustomParams: params,
-	}
-
 	client, err := echo.NewClient(
 		serviceName,
 		kitexclient.WithHostPorts("0.0.0.0:8888"),
-		kitexclient.WithSuite(fileclient.NewSuite(serviceName, key, fw, opts)),
+		kitexclient.WithSuite(fileclient.NewSuite(serviceName, key, fw)),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -192,8 +168,34 @@ func main() {
 }
 ```
 
-#### File配置格式
-配置格式默认支持`json`和`yaml`，可以通过实现`ConfigParser`接口实现自定义解析器，并在`NewSuite`的时候通过`utils.Options`传入自定义解析器以及自定义参数
+#### File配置
+
+##### 自定义解析器
+配置格式默认支持`json`和`yaml`，可以通过实现
+`ConfigParser`接口实现自定义解析器，并在`NewSuite`的时候通过`utils.Options`传入自定义函数
+
+接口定义:
+```
+type ConfigParser interface {
+	Decode(kind ConfigType, data []byte, config interface{}) error
+}
+```
+
+示例代码:
+自定义函数
+```
+func customParser(parser parser.ConfigParser) utils.Options {
+	return func(o *utils.Option) {
+		o.Parser = parser
+	}
+}
+
+func customConfigParams(pararm *parser.ConfigParam) utils.Options {
+	return func(o *utils.Option) {
+		o.Params = pararm
+	}
+}
+```
 
 #### 治理策略
 > 服务名称为 ServiceName，客户端名称为 ClientName
