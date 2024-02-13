@@ -32,15 +32,6 @@ import (
 	"github.com/kitex-contrib/config-file/filewatcher"
 	"github.com/kitex-contrib/config-file/parser"
 	fileserver "github.com/kitex-contrib/config-file/server"
-	"github.com/kitex-contrib/config-file/utils"
-)
-
-var _ api.Echo = &EchoImpl{}
-
-const (
-	filepath    = "kitex_server.json"
-	key         = "ServiceName"
-	serviceName = "ServiceName"
 )
 
 var _ api.Echo = &EchoImpl{}
@@ -83,17 +74,10 @@ func main() {
 	}
 	defer fw.StopWatching()
 
-	// customed by user
-	params := &parser.ConfigParam{}
-	opts := &utils.Options{
-		CustomParser: &MyParser{},
-		CustomParams: params,
-	}
-
 	svr := echo.NewServer(
 		new(EchoImpl),
 		kitexserver.WithServerBasicInfo(&rpcinfo.EndpointBasicInfo{ServiceName: serviceName}),
-		kitexserver.WithSuite(fileserver.NewSuite(key, fw, opts)), // add watcher
+		kitexserver.WithSuite(fileserver.NewSuite(key, fw)), // add watcher
 	)
 	if err := svr.Run(); err != nil {
 		log.Println("server stopped with error:", err)
@@ -123,14 +107,13 @@ import (
 	fileclient "github.com/kitex-contrib/config-file/client"
 	"github.com/kitex-contrib/config-file/filewatcher"
 	"github.com/kitex-contrib/config-file/parser"
-	"github.com/kitex-contrib/config-file/utils"
 )
 
 const (
 	filepath    = "kitex_client.json"
 	key         = "ClientName/ServiceName"
 	serviceName = "ServiceName"
-	clientName  = "ClientName"
+	clientName  = "echo"
 )
 
 // customed by user
@@ -163,17 +146,10 @@ func main() {
 		os.Exit(1)
 	}()
 
-	// customed by user
-	params := &parser.ConfigParam{}
-	opts := &utils.Options{
-		CustomParser: &MyParser{},
-		CustomParams: params,
-	}
-
 	client, err := echo.NewClient(
 		serviceName,
 		kitexclient.WithHostPorts("0.0.0.0:8888"),
-		kitexclient.WithSuite(fileclient.NewSuite(serviceName, key, fw, opts)),
+		kitexclient.WithSuite(fileclient.NewSuite(serviceName, key, fw)),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -192,9 +168,29 @@ func main() {
 }
 ```
 
-#### File Configuration Format
+#### File Configuration
 
-The configuration format supports `json` and `yaml` by default. You can implement a custom parser by implementing the `ConfigParser` interface, and pass in the custom parser and custom parameters through `utils.Options` when `NewSuite`
+##### Custom Parser
+
+The configuration format supports `json` and `yaml` by default. You can implement a custom parser by implementing the `ConfigParser` interface and pass in a custom function in `NewSuite`
+
+Interface definition:
+```go
+// ConfigParser the parser for config file.
+type ConfigParser interface {
+	Decode(kind ConfigType, data []byte, config interface{}) error
+}
+```
+
+Custom function example:
+```go
+func withParser(o *utils.Options) {
+	o.Parser = &MyParser{}
+	o.Params = &parser.ConfigParam{
+		Type: parser.YAML,
+	}
+}
+```
 
 #### Governance Policy
 > The service name is `ServiceName` and the client name is `ClientName`.

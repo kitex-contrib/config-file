@@ -23,9 +23,11 @@ import (
 )
 
 type Options struct {
-	CustomParser parser.ConfigParser
-	CustomParams *parser.ConfigParam
+	Parser parser.ConfigParser
+	Params *parser.ConfigParam
 }
+
+type Option func(o *Options)
 
 // PathExists check whether the file or directory exists
 func PathExists(path string) (bool, error) {

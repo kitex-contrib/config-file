@@ -29,7 +29,6 @@ import (
 	fileclient "github.com/kitex-contrib/config-file/client"
 	"github.com/kitex-contrib/config-file/filewatcher"
 	"github.com/kitex-contrib/config-file/parser"
-	"github.com/kitex-contrib/config-file/utils"
 )
 
 const (
@@ -69,17 +68,10 @@ func main() {
 		os.Exit(1)
 	}()
 
-	// customed by user
-	params := &parser.ConfigParam{}
-	opts := &utils.Options{
-		CustomParser: &MyParser{},
-		CustomParams: params,
-	}
-
 	client, err := echo.NewClient(
 		serviceName,
 		kitexclient.WithHostPorts("0.0.0.0:8888"),
-		kitexclient.WithSuite(fileclient.NewSuite(serviceName, key, fw, opts)),
+		kitexclient.WithSuite(fileclient.NewSuite(serviceName, key, fw)),
 	)
 	if err != nil {
 		log.Fatal(err)
